@@ -34,3 +34,10 @@ knife4j:
         api-rule: package
         api-rule-resources:
           - com.by.cloud.controller
+# JWT配置
+user:
+  jwt:
+    secret-key: cloud
+    # 过期时间一天
+    ttl: 86400000
+    token-name: Authorization
