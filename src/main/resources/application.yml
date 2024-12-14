@@ -41,3 +41,6 @@ user:
     # 过期时间一天
     ttl: 86400000
     token-name: Authorization
+  # 用户密码加密盐值
+  encrypt:
+    salt: picture-cloud
