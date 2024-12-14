@@ -2,8 +2,8 @@ package com.by.cloud.controller;
 
 import com.by.cloud.common.BaseResponse;
 import com.by.cloud.enums.ErrorCode;
-import com.by.cloud.model.dto.UserLoginDto;
-import com.by.cloud.model.dto.UserRegisterDto;
+import com.by.cloud.model.dto.user.UserLoginDto;
+import com.by.cloud.model.dto.user.UserRegisterDto;
 import com.by.cloud.model.vo.UserLoginVo;
 import com.by.cloud.model.vo.UserVo;
 import com.by.cloud.service.UserService;

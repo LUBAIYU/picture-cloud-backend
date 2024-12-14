@@ -1,8 +1,8 @@
 package com.by.cloud.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
-import com.by.cloud.model.dto.UserLoginDto;
-import com.by.cloud.model.dto.UserRegisterDto;
+import com.by.cloud.model.dto.user.UserLoginDto;
+import com.by.cloud.model.dto.user.UserRegisterDto;
 import com.by.cloud.model.entity.User;
 import com.by.cloud.model.vo.UserLoginVo;
 import com.by.cloud.model.vo.UserVo;

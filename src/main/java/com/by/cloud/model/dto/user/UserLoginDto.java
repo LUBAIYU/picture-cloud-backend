@@ -1,4 +1,4 @@
-package com.by.cloud.model.dto;
+package com.by.cloud.model.dto.user;
 
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
