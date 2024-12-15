@@ -45,4 +45,4 @@ user:
     token-name: Authorization
   # 用户密码加密盐值
   encrypt:
-    salt: picture-cloud
+    salt: picture_cloud

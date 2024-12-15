@@ -8,4 +8,8 @@ package com.by.cloud.constants;
 public interface UserConstant {
 
     String USER_ID = "userId";
+
+    int USER_ACCOUNT_LENGTH = 4;
+
+    int USER_PASSWORD_LENGTH = 8;
 }

@@ -66,7 +66,7 @@ public class FileManager {
             int picWidth = imageInfo.getWidth();
             int picHeight = imageInfo.getHeight();
             double picScale = NumberUtil.round(picWidth * 1.0 / picHeight, 2).doubleValue();
-            String filePath = clientConfig.getHost() + File.separator + uploadPath;
+            String filePath = clientConfig.getHost() + uploadPath;
 
             // 创建图片返回信息类
             UploadPictureResult uploadPictureResult = new UploadPictureResult();
@@ -80,6 +80,44 @@ public class FileManager {
 
             // 返回
             return uploadPictureResult;
+
+        } catch (Exception e) {
+            log.error("图片上传到对象存储失败", e);
+            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "上传失败");
+        } finally {
+            // 删除临时文件，释放资源
+            this.deleteTempFile(tempFile);
+        }
+    }
+
+    /**
+     * 上传头像
+     *
+     * @param multipartFile    文件
+     * @param uploadPathPrefix 路径前缀
+     * @return 头像地址
+     */
+    public String uploadAvatar(MultipartFile multipartFile, String uploadPathPrefix) {
+        // 校验文件
+        validateFile(multipartFile);
+
+        // 重新拼接图片路径，不使用原始的文件名，避免重复和增加安全性
+        String uuid = RandomUtil.randomString(16);
+        String date = DateUtil.formatDate(new Date());
+        String filename = multipartFile.getOriginalFilename();
+        String uploadFileName = String.format("%s_%s.%s", date, uuid, FileUtil.getSuffix(filename));
+        String uploadPath = String.format("/%s/%s", uploadPathPrefix, uploadFileName);
+
+        // 上传图片
+        File tempFile = null;
+        try {
+            // 上传文件
+            tempFile = File.createTempFile(uploadPath, null);
+            multipartFile.transferTo(tempFile);
+            cosManager.putObject(uploadPath, tempFile);
+
+            // 返回图片地址
+            return clientConfig.getHost() + uploadPath;
 
         } catch (Exception e) {
             log.error("图片上传到对象存储失败", e);
