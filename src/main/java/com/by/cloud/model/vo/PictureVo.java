@@ -54,6 +54,9 @@ public class PictureVo implements Serializable {
     @ApiModelProperty("图片格式")
     private String picFormat;
 
+    @ApiModelProperty("创建用户ID")
+    private Long userId;
+
     @ApiModelProperty("创建用户")
     private UserVo userVo;
 
