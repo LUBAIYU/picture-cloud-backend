@@ -40,7 +40,6 @@ public class JwtInterceptor implements HandlerInterceptor {
         String token = request.getHeader(jwtProperties.getTokenName());
         if (StrUtil.isBlank(token)) {
             // 响应失败
-            response.setStatus(ErrorCode.NOT_LOGIN_ERROR.getCode());
             throw new BusinessException(ErrorCode.NOT_LOGIN_ERROR);
         }
         log.info("令牌 Token = {}", token);
@@ -56,7 +55,6 @@ public class JwtInterceptor implements HandlerInterceptor {
             return true;
         } catch (Exception e) {
             // 响应失败
-            response.setStatus(ErrorCode.NOT_LOGIN_ERROR.getCode());
             throw new BusinessException(ErrorCode.NOT_LOGIN_ERROR);
         }
     }
