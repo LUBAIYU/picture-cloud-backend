@@ -10,6 +10,7 @@ import com.by.cloud.model.dto.picture.PicturePageDto;
 import com.by.cloud.model.dto.picture.PictureUpdateDto;
 import com.by.cloud.model.dto.picture.PictureUploadDto;
 import com.by.cloud.model.entity.Picture;
+import com.by.cloud.model.vo.PictureTagCategoryVo;
 import com.by.cloud.model.vo.PictureVo;
 import com.by.cloud.service.PictureService;
 import com.by.cloud.utils.ResultUtils;
@@ -21,6 +22,8 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.annotation.Resource;
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * @author lzh
@@ -104,5 +107,16 @@ public class PictureController {
         ThrowUtils.throwIf(editDto == null, ErrorCode.PARAMS_ERROR);
         pictureService.editPicture(editDto);
         return ResultUtils.success(true);
+    }
+
+    @ApiOperation("获取图片标签分类列表")
+    @GetMapping("/tag_category")
+    public BaseResponse<PictureTagCategoryVo> listPictureTagCategory() {
+        PictureTagCategoryVo pictureTagCategoryVo = new PictureTagCategoryVo();
+        List<String> tagList = Arrays.asList("热门", "搞笑", "生活", "高清", "艺术", "校园", "背景", "简历");
+        List<String> categoryList = Arrays.asList("模板", "电商", "表情包", "素材", "海报");
+        pictureTagCategoryVo.setTagList(tagList);
+        pictureTagCategoryVo.setCategoryList(categoryList);
+        return ResultUtils.success(pictureTagCategoryVo);
     }
 }
