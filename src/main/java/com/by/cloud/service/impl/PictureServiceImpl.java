@@ -143,17 +143,20 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture> impl
         queryWrapper.like(StrUtil.isNotBlank(introduction), Picture::getIntroduction, introduction);
         queryWrapper.eq(StrUtil.isNotBlank(category), Picture::getCategory, category);
         queryWrapper.orderByDesc(Picture::getCreateTime);
+
         // 标签查询
         if (CollUtil.isNotEmpty(tagList)) {
             for (String tag : tagList) {
                 queryWrapper.like(Picture::getTags, "\"" + tag + "\"");
             }
         }
-        // 搜索关键词同时匹配名称和简介
-        queryWrapper.and(qw -> qw.like(Picture::getPicName, searchText)
-                .or()
-                .like(Picture::getIntroduction, searchText)
-        );
+        if (StrUtil.isNotBlank(searchText)) {
+            // 搜索关键词同时匹配名称和简介
+            queryWrapper.and(qw -> qw.like(Picture::getPicName, searchText)
+                    .or()
+                    .like(Picture::getIntroduction, searchText)
+            );
+        }
 
         // 查询
         this.page(page, queryWrapper);

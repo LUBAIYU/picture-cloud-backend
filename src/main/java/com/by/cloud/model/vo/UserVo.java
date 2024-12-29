@@ -13,6 +13,7 @@ import java.time.LocalDateTime;
 @Data
 public class UserVo implements Serializable {
 
+    @JsonFormat(shape = JsonFormat.Shape.STRING)
     @ApiModelProperty("ID")
     private Long userId;
 
