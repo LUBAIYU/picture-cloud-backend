@@ -4,11 +4,9 @@ import com.by.cloud.aop.PreAuthorize;
 import com.by.cloud.common.BaseResponse;
 import com.by.cloud.common.PageResult;
 import com.by.cloud.enums.ErrorCode;
+import com.by.cloud.enums.PictureReviewStatusEnum;
 import com.by.cloud.enums.UserRoleEnum;
-import com.by.cloud.model.dto.picture.PictureEditDto;
-import com.by.cloud.model.dto.picture.PicturePageDto;
-import com.by.cloud.model.dto.picture.PictureUpdateDto;
-import com.by.cloud.model.dto.picture.PictureUploadDto;
+import com.by.cloud.model.dto.picture.*;
 import com.by.cloud.model.entity.Picture;
 import com.by.cloud.model.vo.PictureTagCategoryVo;
 import com.by.cloud.model.vo.PictureVo;
@@ -38,7 +36,6 @@ public class PictureController {
     private PictureService pictureService;
 
     @ApiOperation("上传图片")
-    @PreAuthorize(role = UserRoleEnum.ADMIN)
     @PostMapping("/upload")
     public BaseResponse<PictureVo> uploadPicture(@RequestPart("file") MultipartFile multipartFile,
                                                  PictureUploadDto dto) {
@@ -88,6 +85,8 @@ public class PictureController {
         // 限制爬虫
         int pageSize = pageDto.getPageSize();
         ThrowUtils.throwIf(pageSize > 20, ErrorCode.PARAMS_ERROR);
+        // 用户只能看到审核通过的图片
+        pageDto.setReviewStatus(PictureReviewStatusEnum.PASS.getValue());
         PageResult<PictureVo> pageResult = pictureService.queryPictureVoByPage(pageDto);
         return ResultUtils.success(pageResult);
     }
@@ -118,5 +117,14 @@ public class PictureController {
         pictureTagCategoryVo.setTagList(tagList);
         pictureTagCategoryVo.setCategoryList(categoryList);
         return ResultUtils.success(pictureTagCategoryVo);
+    }
+
+    @ApiOperation("图片审核")
+    @PreAuthorize(role = UserRoleEnum.ADMIN)
+    @PostMapping("/review")
+    public BaseResponse<Boolean> doPictureReview(@RequestBody PictureReviewDto reviewDto) {
+        ThrowUtils.throwIf(reviewDto == null, ErrorCode.PARAMS_ERROR);
+        pictureService.pictureReview(reviewDto);
+        return ResultUtils.success(true);
     }
 }

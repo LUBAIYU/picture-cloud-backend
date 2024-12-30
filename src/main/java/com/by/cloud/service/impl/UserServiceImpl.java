@@ -271,6 +271,23 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         return PageResult.of(total, userVoList);
     }
 
+    @Override
+    public boolean isAdmin(Long userId) {
+        User user = this.getById(userId);
+        ThrowUtils.throwIf(user == null, ErrorCode.NOT_FOUND_ERROR);
+        Integer userRole = user.getUserRole();
+        UserRoleEnum roleEnum = UserRoleEnum.getEnumByValue(userRole);
+        return UserRoleEnum.ADMIN.equals(roleEnum);
+    }
+
+    @Override
+    public boolean isAdmin(UserVo userVo) {
+        ThrowUtils.throwIf(userVo == null, ErrorCode.NOT_FOUND_ERROR);
+        Integer userRole = userVo.getUserRole();
+        UserRoleEnum roleEnum = UserRoleEnum.getEnumByValue(userRole);
+        return UserRoleEnum.ADMIN.equals(roleEnum);
+    }
+
     /**
      * 校验密码和确认密码
      *

@@ -80,4 +80,20 @@ public interface UserService extends IService<User> {
      * @return 分页结果
      */
     PageResult<UserVo> pageUsers(UserPageDto pageDto);
+
+    /**
+     * 判断是否是管理员
+     *
+     * @param userId 用户ID
+     * @return boolean
+     */
+    boolean isAdmin(Long userId);
+
+    /**
+     * 判断是否是管理员
+     *
+     * @param userVo 用户信息
+     * @return boolean
+     */
+    boolean isAdmin(UserVo userVo);
 }

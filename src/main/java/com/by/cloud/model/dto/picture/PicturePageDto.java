@@ -29,4 +29,10 @@ public class PicturePageDto extends PageRequest implements Serializable {
 
     @ApiModelProperty("搜索关键词")
     private String searchText;
+
+    @ApiModelProperty("审核状态：0-待审核；1-通过；2-拒绝")
+    private Integer reviewStatus;
+
+    @ApiModelProperty("审核信息")
+    private String reviewMessage;
 }

@@ -2,12 +2,11 @@ package com.by.cloud.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.by.cloud.common.PageResult;
-import com.by.cloud.model.dto.picture.PictureEditDto;
-import com.by.cloud.model.dto.picture.PicturePageDto;
-import com.by.cloud.model.dto.picture.PictureUpdateDto;
-import com.by.cloud.model.dto.picture.PictureUploadDto;
+import com.by.cloud.model.dto.picture.*;
 import com.by.cloud.model.entity.Picture;
+import com.by.cloud.model.entity.User;
 import com.by.cloud.model.vo.PictureVo;
+import com.by.cloud.model.vo.UserVo;
 import org.springframework.web.multipart.MultipartFile;
 
 /**
@@ -77,4 +76,19 @@ public interface PictureService extends IService<Picture> {
      * @param editDto 编辑信息
      */
     void editPicture(PictureEditDto editDto);
+
+    /**
+     * 图片审核（仅管理员）
+     *
+     * @param reviewDto 审核参数
+     */
+    void pictureReview(PictureReviewDto reviewDto);
+
+    /**
+     * 填充审核参数
+     *
+     * @param picture   图片信息
+     * @param loginUser 登录用户
+     */
+    void fillReviewParams(Picture picture, UserVo loginUser);
 }
