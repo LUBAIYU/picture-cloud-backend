@@ -44,6 +44,15 @@ public class PictureController {
         return ResultUtils.success(pictureVo);
     }
 
+    @ApiOperation("通过 URL 上传图片")
+    @PostMapping("/url/upload")
+    public BaseResponse<PictureVo> uploadPictureByUrl(@RequestBody PictureUploadDto dto) {
+        ThrowUtils.throwIf(dto == null, ErrorCode.PARAMS_ERROR);
+        String fileUrl = dto.getFileUrl();
+        PictureVo pictureVo = pictureService.uploadPicture(fileUrl, dto);
+        return ResultUtils.success(pictureVo);
+    }
+
     @ApiOperation("根据ID获取图片（仅管理员）")
     @PreAuthorize(role = UserRoleEnum.ADMIN)
     @GetMapping("/get")

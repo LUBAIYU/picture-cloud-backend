@@ -9,8 +9,10 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.by.cloud.common.BaseContext;
-import com.by.cloud.common.FileManager;
 import com.by.cloud.common.PageResult;
+import com.by.cloud.common.upload.BasePictureUploadTemplate;
+import com.by.cloud.common.upload.FilePictureUpload;
+import com.by.cloud.common.upload.UrlPictureUpload;
 import com.by.cloud.constants.PictureConstant;
 import com.by.cloud.enums.ErrorCode;
 import com.by.cloud.enums.PictureReviewStatusEnum;
@@ -28,7 +30,6 @@ import com.by.cloud.service.UserService;
 import com.by.cloud.utils.ThrowUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.multipart.MultipartFile;
 
 import javax.annotation.Resource;
 import java.time.LocalDateTime;
@@ -45,14 +46,17 @@ import java.util.stream.Collectors;
 public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture> implements PictureService {
 
     @Resource
-    private FileManager fileManager;
+    private UserService userService;
 
     @Resource
-    private UserService userService;
+    private FilePictureUpload filePictureUpload;
+
+    @Resource
+    private UrlPictureUpload urlPictureUpload;
 
     @Override
     @Transactional(rollbackFor = BusinessException.class)
-    public PictureVo uploadPicture(MultipartFile multipartFile, PictureUploadDto dto) {
+    public PictureVo uploadPicture(Object inputSource, PictureUploadDto dto) {
         // 获取登录用户ID
         UserVo loginUser = userService.getLoginUser();
         Long loginUserId = loginUser.getUserId();
@@ -73,7 +77,12 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture> impl
 
         // 上传图片获取图片信息
         String uploadPathPrefix = String.format("public/%s", loginUserId);
-        UploadPictureResult uploadPictureResult = fileManager.uploadPicture(multipartFile, uploadPathPrefix);
+        // 根据输入源类型调用不同的上传逻辑
+        BasePictureUploadTemplate basePictureUploadTemplate = filePictureUpload;
+        if (inputSource instanceof String) {
+            basePictureUploadTemplate = urlPictureUpload;
+        }
+        UploadPictureResult uploadPictureResult = basePictureUploadTemplate.uploadPicture(inputSource, uploadPathPrefix);
 
         // 构造入库信息
         Picture picture = new Picture();

@@ -13,4 +13,7 @@ public class PictureUploadDto implements Serializable {
 
     @ApiModelProperty("图片ID")
     private Long picId;
+
+    @ApiModelProperty("图片URL")
+    private String fileUrl;
 }

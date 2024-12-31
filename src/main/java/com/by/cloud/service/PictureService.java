@@ -4,10 +4,8 @@ import com.baomidou.mybatisplus.extension.service.IService;
 import com.by.cloud.common.PageResult;
 import com.by.cloud.model.dto.picture.*;
 import com.by.cloud.model.entity.Picture;
-import com.by.cloud.model.entity.User;
 import com.by.cloud.model.vo.PictureVo;
 import com.by.cloud.model.vo.UserVo;
-import org.springframework.web.multipart.MultipartFile;
 
 /**
  * @author lzh
@@ -17,11 +15,11 @@ public interface PictureService extends IService<Picture> {
     /**
      * 上传图片
      *
-     * @param multipartFile 文件
-     * @param dto           请求数据
+     * @param inputSource 文件输入源
+     * @param dto         请求数据
      * @return 图片信息
      */
-    PictureVo uploadPicture(MultipartFile multipartFile, PictureUploadDto dto);
+    PictureVo uploadPicture(Object inputSource, PictureUploadDto dto);
 
     /**
      * 根据ID获取图片包装类
