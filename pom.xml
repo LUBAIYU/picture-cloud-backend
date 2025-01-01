@@ -14,6 +14,12 @@
         <spring-boot.version>2.7.6</spring-boot.version>
     </properties>
     <dependencies>
+        <!-- Jsoup HTML解析库 -->
+        <dependency>
+            <groupId>org.jsoup</groupId>
+            <artifactId>jsoup</artifactId>
+            <version>1.16.1</version>
+        </dependency>
         <!-- 腾讯云COS存储 -->
         <dependency>
             <groupId>com.qcloud</groupId>

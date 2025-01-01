@@ -89,4 +89,12 @@ public interface PictureService extends IService<Picture> {
      * @param loginUser 登录用户
      */
     void fillReviewParams(Picture picture, UserVo loginUser);
+
+    /**
+     * 批量抓取并上传图片
+     *
+     * @param batchDto 请求参数
+     * @return 上传成功的图片数量
+     */
+    int uploadPictureByBatch(PictureBatchDto batchDto);
 }

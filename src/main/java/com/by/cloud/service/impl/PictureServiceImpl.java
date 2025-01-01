@@ -2,6 +2,7 @@ package com.by.cloud.service.impl;
 
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.collection.CollUtil;
+import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
@@ -28,10 +29,16 @@ import com.by.cloud.model.vo.UserVo;
 import com.by.cloud.service.PictureService;
 import com.by.cloud.service.UserService;
 import com.by.cloud.utils.ThrowUtils;
+import lombok.extern.slf4j.Slf4j;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
+import org.jsoup.select.Elements;
+import org.springframework.aop.framework.AopContext;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.Resource;
+import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
@@ -42,6 +49,7 @@ import java.util.stream.Collectors;
 /**
  * @author lzh
  */
+@Slf4j
 @Service
 public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture> implements PictureService {
 
@@ -55,7 +63,6 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture> impl
     private UrlPictureUpload urlPictureUpload;
 
     @Override
-    @Transactional(rollbackFor = BusinessException.class)
     public PictureVo uploadPicture(Object inputSource, PictureUploadDto dto) {
         // 获取登录用户ID
         UserVo loginUser = userService.getLoginUser();
@@ -87,6 +94,10 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture> impl
         // 构造入库信息
         Picture picture = new Picture();
         BeanUtil.copyProperties(uploadPictureResult, picture);
+        // 设置自定义图片名称
+        if (dto != null && StrUtil.isNotBlank(dto.getPicName())) {
+            picture.setPicName(dto.getPicName());
+        }
         picture.setUserId(loginUserId);
         // 补充审核参数
         this.fillReviewParams(picture, loginUser);
@@ -94,7 +105,10 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture> impl
             picture.setPicId(picId);
             picture.setEditTime(LocalDateTime.now());
         }
-        boolean result = this.saveOrUpdate(picture);
+        // 获取代理对象
+        PictureService proxyService = (PictureService) AopContext.currentProxy();
+        // 使用代理对象调用，防止事务失效
+        boolean result = proxyService.saveOrUpdate(picture);
         ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR, "图片保存失败");
         return PictureVo.objToVo(picture);
     }
@@ -328,6 +342,69 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture> impl
             // 用户则待审核
             picture.setReviewStatus(PictureReviewStatusEnum.UNREVIEWED.getValue());
         }
+    }
+
+    @Override
+    public int uploadPictureByBatch(PictureBatchDto batchDto) {
+        // 校验参数
+        String searchText = batchDto.getSearchText();
+        Integer count = batchDto.getCount();
+        String namePrefix = batchDto.getNamePrefix();
+        // 如果名称前缀为空，则默认为搜索关键词
+        if (StrUtil.isBlank(namePrefix)) {
+            namePrefix = searchText;
+        }
+        if (StrUtil.isBlank(searchText)) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        ThrowUtils.throwIf(count == null || count <= 0, ErrorCode.PARAMS_ERROR);
+        ThrowUtils.throwIf(count > 30, ErrorCode.PARAMS_ERROR, "最多上传30张图片");
+
+        // 抓取图片
+        String fetchUrl = String.format("https://cn.bing.com/images/async?q=%s&mmasync=1", searchText);
+        Document document;
+        try {
+            document = Jsoup.connect(fetchUrl).get();
+        } catch (IOException e) {
+            log.error("获取页面失败", e);
+            throw new BusinessException(ErrorCode.OPERATION_ERROR, "获取页面失败");
+        }
+
+        // 解析内容
+        Element div = document.getElementsByClass("dgControl").first();
+        if (ObjectUtil.isNull(div)) {
+            throw new BusinessException(ErrorCode.OPERATION_ERROR, "获取元素失败");
+        }
+        Elements imgElementList = div.select("img.mimg");
+        int uploadCount = 0;
+        for (Element element : imgElementList) {
+            String fileUrl = element.attr("src");
+            // 如果链接为空，直接跳过
+            if (StrUtil.isBlank(fileUrl)) {
+                log.info("当前链接为空，已跳过：{}", fileUrl);
+                continue;
+            }
+            // 处理图片地址
+            int questionMarkIndex = fileUrl.indexOf("?");
+            if (questionMarkIndex > -1) {
+                fileUrl = fileUrl.substring(0, questionMarkIndex);
+            }
+            // 上传图片
+            PictureUploadDto uploadDto = new PictureUploadDto();
+            uploadDto.setPicName(namePrefix + (uploadCount + 1));
+            try {
+                PictureVo pictureVo = this.uploadPicture(fileUrl, uploadDto);
+                log.info("图片上传成功，id = {}", pictureVo.getPicId());
+                uploadCount++;
+            } catch (Exception e) {
+                log.error("图片上传失败", e);
+                continue;
+            }
+            if (uploadCount >= count) {
+                break;
+            }
+        }
+        return uploadCount;
     }
 }
 

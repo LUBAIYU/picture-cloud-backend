@@ -136,4 +136,13 @@ public class PictureController {
         pictureService.pictureReview(reviewDto);
         return ResultUtils.success(true);
     }
+
+    @ApiOperation("批量抓取并上传图片")
+    @PreAuthorize(role = UserRoleEnum.ADMIN)
+    @PostMapping("/batch/upload")
+    public BaseResponse<Integer> uploadPictureByBatch(@RequestBody PictureBatchDto batchDto) {
+        ThrowUtils.throwIf(batchDto == null, ErrorCode.PARAMS_ERROR);
+        int uploadCount = pictureService.uploadPictureByBatch(batchDto);
+        return ResultUtils.success(uploadCount);
+    }
 }
