@@ -3,6 +3,7 @@ package com.by.cloud.service.impl;
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.ObjectUtil;
+import cn.hutool.core.util.RandomUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
@@ -29,21 +30,28 @@ import com.by.cloud.model.vo.UserVo;
 import com.by.cloud.service.PictureService;
 import com.by.cloud.service.UserService;
 import com.by.cloud.utils.ThrowUtils;
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import lombok.extern.slf4j.Slf4j;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 import org.springframework.aop.framework.AopContext;
+import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.stereotype.Service;
+import org.springframework.util.DigestUtils;
 
 import javax.annotation.Resource;
 import java.io.IOException;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 /**
@@ -61,6 +69,20 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture> impl
 
     @Resource
     private UrlPictureUpload urlPictureUpload;
+
+    @Resource
+    private StringRedisTemplate stringRedisTemplate;
+
+    /**
+     * 本地缓存
+     */
+    public static final Cache<String, String> LOCAL_CACHE = Caffeine.newBuilder()
+            .initialCapacity(1024)
+            // 最大 10000 条
+            .maximumSize(10_000L)
+            // 缓存 5 分钟
+            .expireAfterWrite(Duration.ofMinutes(5))
+            .build();
 
     @Override
     public PictureVo uploadPicture(Object inputSource, PictureUploadDto dto) {
@@ -405,6 +427,46 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture> impl
             }
         }
         return uploadCount;
+    }
+
+    @Override
+    public PageResult<PictureVo> queryPictureVoByPageWithCache(PicturePageDto pageDto) {
+        // 查询条件转JSON，然后再Md5加密
+        String questionStr = JSONUtil.toJsonStr(pageDto);
+        String hashKey = DigestUtils.md5DigestAsHex(questionStr.getBytes());
+        // 构建缓存Key
+        String cacheKey = String.format("picture-cloud-backend:queryPictureVoByPage:%s", hashKey);
+
+        // 1.查询本地缓存
+        String cachedValue = LOCAL_CACHE.getIfPresent(cacheKey);
+        if (cachedValue != null) {
+            // 缓存命中，直接返回
+            return JSONUtil.toBean(cachedValue, PageResult.class);
+        }
+
+        // 2.查询 Redis 缓存
+        ValueOperations<String, String> opsForValue = stringRedisTemplate.opsForValue();
+        cachedValue = opsForValue.get(cacheKey);
+        if (cachedValue != null) {
+            // 更新本地缓存
+            LOCAL_CACHE.put(cacheKey, cachedValue);
+            // 缓存命中，直接返回
+            return JSONUtil.toBean(cachedValue, PageResult.class);
+        }
+
+        // 3.查询数据库
+        PageResult<PictureVo> voPageResult = this.queryPictureVoByPage(pageDto);
+
+        // 4.设置过期时间，更新 Redis 缓存
+        int cacheTime = 300 + RandomUtil.randomInt(0, 300);
+        String resultStr = JSONUtil.toJsonStr(voPageResult);
+        opsForValue.set(cacheKey, resultStr, cacheTime, TimeUnit.SECONDS);
+
+        // 5.更新本地缓存
+        LOCAL_CACHE.put(cacheKey, resultStr);
+
+        // 返回结果
+        return voPageResult;
     }
 }
 

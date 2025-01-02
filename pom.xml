@@ -14,6 +14,16 @@
         <spring-boot.version>2.7.6</spring-boot.version>
     </properties>
     <dependencies>
+        <!-- 本地缓存 Caffeine 依赖 -->
+        <dependency>
+            <groupId>com.github.ben-manes.caffeine</groupId>
+            <artifactId>caffeine</artifactId>
+        </dependency>
+        <!-- Redis 依赖 -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-redis</artifactId>
+        </dependency>
         <!-- Jsoup HTML解析库 -->
         <dependency>
             <groupId>org.jsoup</groupId>

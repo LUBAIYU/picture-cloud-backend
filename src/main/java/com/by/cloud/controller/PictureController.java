@@ -100,6 +100,19 @@ public class PictureController {
         return ResultUtils.success(pageResult);
     }
 
+    @ApiOperation("分页查询图片（封装类），多级缓存")
+    @PostMapping("/cache/vo/page")
+    public BaseResponse<PageResult<PictureVo>> queryPictureVoByPageWithCache(@RequestBody PicturePageDto pageDto) {
+        ThrowUtils.throwIf(pageDto == null, ErrorCode.PARAMS_ERROR);
+        // 限制爬虫
+        int pageSize = pageDto.getPageSize();
+        ThrowUtils.throwIf(pageSize > 20, ErrorCode.PARAMS_ERROR);
+        // 用户只能看到审核通过的图片
+        pageDto.setReviewStatus(PictureReviewStatusEnum.PASS.getValue());
+        PageResult<PictureVo> pageResult = pictureService.queryPictureVoByPageWithCache(pageDto);
+        return ResultUtils.success(pageResult);
+    }
+
     @ApiOperation("更新图片信息（仅管理员）")
     @PreAuthorize(role = UserRoleEnum.ADMIN)
     @PutMapping("/update")

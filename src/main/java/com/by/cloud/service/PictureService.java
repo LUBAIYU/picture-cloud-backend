@@ -97,4 +97,12 @@ public interface PictureService extends IService<Picture> {
      * @return 上传成功的图片数量
      */
     int uploadPictureByBatch(PictureBatchDto batchDto);
+
+    /**
+     * 分页查询图片（封装类），有缓存
+     *
+     * @param pageDto 分页参数
+     * @return 分页结果
+     */
+    PageResult<PictureVo> queryPictureVoByPageWithCache(PicturePageDto pageDto);
 }
