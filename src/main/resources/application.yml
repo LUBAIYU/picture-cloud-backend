@@ -24,6 +24,10 @@ spring:
   servlet:
     multipart:
       max-file-size: 10MB
+  # JSON时间序列化
+  jackson:
+    date-format: yyyy-MM-dd HH:mm:ss
+    time-zone: GMT+8
 # mybatis-plus 配置
 mybatis-plus:
   configuration:
