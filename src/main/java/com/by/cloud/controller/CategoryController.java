@@ -69,7 +69,7 @@ public class CategoryController {
     @ApiOperation("查询分类列表")
     @PreAuthorize(role = UserRoleEnum.ADMIN)
     @GetMapping("/list")
-    public BaseResponse<List<CategoryListVo>> listCategoryName() {
+    public BaseResponse<List<CategoryListVo>> listCategory() {
         List<CategoryListVo> categoryListVos = categoryService.listCategory();
         return ResultUtils.success(categoryListVos);
     }

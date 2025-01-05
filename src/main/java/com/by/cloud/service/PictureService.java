@@ -55,12 +55,12 @@ public interface PictureService extends IService<Picture> {
     PageResult<PictureVo> queryPictureVoByPage(PicturePageDto pageDto);
 
     /**
-     * 更新图片信息（仅管理员）
+     * 更新图片信息
      *
      * @param updateDto 图片信息请求体
      * @return 是否更新成功
      */
-    boolean updatePictureByAdmin(PictureUpdateDto updateDto);
+    boolean updatePicture(PictureUpdateDto updateDto);
 
     /**
      * 校验图片
@@ -69,12 +69,6 @@ public interface PictureService extends IService<Picture> {
      */
     void validPicture(Picture picture);
 
-    /**
-     * 编辑图片信息（用户使用）
-     *
-     * @param editDto 编辑信息
-     */
-    void editPicture(PictureEditDto editDto);
 
     /**
      * 图片审核（仅管理员）
@@ -113,4 +107,11 @@ public interface PictureService extends IService<Picture> {
      * @return 图片标签分类列表
      */
     PictureTagCategoryVo listPictureTagCategory();
+
+    /**
+     * 根据ID删除图片
+     *
+     * @param picId 图片ID
+     */
+    void deletePictureById(Long picId);
 }

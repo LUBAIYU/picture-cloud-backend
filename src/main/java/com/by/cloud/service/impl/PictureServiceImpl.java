@@ -23,20 +23,17 @@ import com.by.cloud.exception.BusinessException;
 import com.by.cloud.mapper.PictureMapper;
 import com.by.cloud.model.dto.file.UploadPictureResult;
 import com.by.cloud.model.dto.picture.*;
-import com.by.cloud.model.entity.Picture;
-import com.by.cloud.model.entity.User;
+import com.by.cloud.model.entity.*;
 import com.by.cloud.model.vo.category.CategoryListVo;
 import com.by.cloud.model.vo.picture.PictureTagCategoryVo;
 import com.by.cloud.model.vo.picture.PictureVo;
 import com.by.cloud.model.vo.tag.TagListVo;
 import com.by.cloud.model.vo.user.UserVo;
-import com.by.cloud.service.CategoryService;
-import com.by.cloud.service.PictureService;
-import com.by.cloud.service.TagService;
-import com.by.cloud.service.UserService;
+import com.by.cloud.service.*;
 import com.by.cloud.utils.ThrowUtils;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -46,16 +43,13 @@ import org.springframework.aop.framework.AopContext;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.DigestUtils;
 
-import javax.annotation.Resource;
 import java.io.IOException;
 import java.time.Duration;
 import java.time.LocalDateTime;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -64,25 +58,16 @@ import java.util.stream.Collectors;
  */
 @Slf4j
 @Service
+@RequiredArgsConstructor
 public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture> implements PictureService {
 
-    @Resource
-    private UserService userService;
-
-    @Resource
-    private FilePictureUpload filePictureUpload;
-
-    @Resource
-    private UrlPictureUpload urlPictureUpload;
-
-    @Resource
-    private StringRedisTemplate stringRedisTemplate;
-
-    @Resource
-    private CategoryService categoryService;
-
-    @Resource
-    private TagService tagService;
+    private final UserService userService;
+    private final FilePictureUpload filePictureUpload;
+    private final UrlPictureUpload urlPictureUpload;
+    private final StringRedisTemplate stringRedisTemplate;
+    private final CategoryService categoryService;
+    private final TagService tagService;
+    private final PictureCategoryTagService pictureCategoryTagService;
 
     /**
      * 本地缓存
@@ -267,19 +252,85 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture> impl
     }
 
     @Override
-    public boolean updatePictureByAdmin(PictureUpdateDto updateDto) {
+    @Transactional(rollbackFor = Exception.class)
+    public boolean updatePicture(PictureUpdateDto updateDto) {
+        // 校验参数
+        Long picId = updateDto.getPicId();
+        Long categoryId = updateDto.getCategoryId();
+        List<Long> tagIdList = updateDto.getTagIdList();
+        if (picId == null || picId <= 0) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        if (categoryId != null && categoryId <= 0) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        this.validIdList(tagIdList);
+
+        // 先删除图片原有的绑定关系
+        pictureCategoryTagService.lambdaUpdate()
+                .eq(PictureCategoryTag::getPictureId, picId)
+                .remove();
+
+        // 如果只传递了标签，但是没有传分类，则报错，此业务默认标签属于分类下的一个层级
+        if (categoryId == null && CollUtil.isNotEmpty(tagIdList)) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "需先指定分类，再选标签");
+        }
+
+        // 保存新的绑定关系
+        if (categoryId != null) {
+            List<PictureCategoryTag> pictureCategoryTagList = new ArrayList<>();
+            if (CollUtil.isNotEmpty(tagIdList)) {
+                for (Long tagId : tagIdList) {
+                    PictureCategoryTag pictureCategoryTag = new PictureCategoryTag();
+                    pictureCategoryTag.setPictureId(picId);
+                    pictureCategoryTag.setCategoryId(categoryId);
+                    pictureCategoryTag.setTagId(tagId);
+                    pictureCategoryTagList.add(pictureCategoryTag);
+                }
+            } else {
+                PictureCategoryTag pictureCategoryTag = new PictureCategoryTag();
+                pictureCategoryTag.setPictureId(picId);
+                pictureCategoryTag.setCategoryId(categoryId);
+                pictureCategoryTagList.add(pictureCategoryTag);
+            }
+            // 插入数据库
+            boolean saved = pictureCategoryTagService.saveBatch(pictureCategoryTagList);
+            ThrowUtils.throwIf(!saved, ErrorCode.OPERATION_ERROR);
+        }
+
         // 复制参数
         Picture picture = new Picture();
         BeanUtil.copyProperties(updateDto, picture);
-        picture.setTags(JSONUtil.toJsonStr(updateDto.getTagList()));
+
+        // 冗余分类与标签
+        Category category = categoryService.lambdaQuery()
+                .eq(Category::getId, categoryId)
+                .one();
+        ThrowUtils.throwIf(category == null, ErrorCode.NOT_FOUND_ERROR);
+        picture.setCategory(category.getName());
+        List<Tag> tagList = tagService.lambdaQuery()
+                .in(Tag::getId, tagIdList)
+                .list();
+        if (CollUtil.isEmpty(tagList) || tagList.size() != tagIdList.size()) {
+            throw new BusinessException(ErrorCode.NOT_FOUND_ERROR);
+        }
+        List<String> tagNameList = tagList.stream().map(Tag::getName).toList();
+        picture.setTags(JSONUtil.toJsonStr(tagNameList));
+
         // 校验
         this.validPicture(picture);
+
         // 判断ID是否存在
-        Picture dbPicture = this.getById(updateDto.getPicId());
+        Picture dbPicture = this.getById(picId);
         ThrowUtils.throwIf(dbPicture == null, ErrorCode.NOT_FOUND_ERROR);
-        // 填充审核参数
+
+        // 判断是否有权限，只有创建用户本人或管理员才能更改
         UserVo loginUser = userService.getLoginUser();
+        this.checkUpdateAuth(loginUser, dbPicture.getUserId());
+
+        // 填充审核参数
         this.fillReviewParams(picture, loginUser);
+
         // 更新数据
         boolean updated = this.updateById(picture);
         ThrowUtils.throwIf(!updated, ErrorCode.OPERATION_ERROR);
@@ -289,12 +340,10 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture> impl
     @Override
     public void validPicture(Picture picture) {
         // 获取校验字段
-        Long picId = picture.getPicId();
         String picName = picture.getPicName();
         String introduction = picture.getIntroduction();
         String picUrl = picture.getPicUrl();
         // 校验
-        ThrowUtils.throwIf(picId == null, ErrorCode.PARAMS_ERROR, "图片ID不能为空");
         if (StrUtil.isNotBlank(picName)) {
             ThrowUtils.throwIf(picName.length() > PictureConstant.MAX_NAME_LENGTH, ErrorCode.PARAMS_ERROR, "图片名称过长");
         }
@@ -304,31 +353,6 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture> impl
         if (StrUtil.isNotBlank(picUrl)) {
             ThrowUtils.throwIf(picUrl.length() > PictureConstant.MAX_URL_LENGTH, ErrorCode.PARAMS_ERROR, "图片URL过长");
         }
-    }
-
-    @Override
-    public void editPicture(PictureEditDto editDto) {
-        // 复制信息
-        Picture picture = new Picture();
-        BeanUtil.copyProperties(editDto, picture);
-        picture.setTags(JSONUtil.toJsonStr(editDto.getTagList()));
-        // 校验图片
-        this.validPicture(picture);
-        // 判断图片是否存在
-        Picture dbPicture = this.getById(editDto.getPicId());
-        ThrowUtils.throwIf(dbPicture == null, ErrorCode.NOT_FOUND_ERROR);
-        // 判断是否有权限，只有创建用户本人或管理员才能更改
-        UserVo loginUser = userService.getLoginUser();
-        Long userId = dbPicture.getUserId();
-        Long loginUserId = loginUser.getUserId();
-        if (!userId.equals(loginUserId) && !UserRoleEnum.ADMIN.getValue().equals(loginUser.getUserRole())) {
-            throw new BusinessException(ErrorCode.NO_AUTH_ERROR);
-        }
-        // 填充审核信息
-        this.fillReviewParams(picture, loginUser);
-        // 更新图片信息
-        boolean updated = this.updateById(picture);
-        ThrowUtils.throwIf(!updated, ErrorCode.OPERATION_ERROR);
     }
 
     @Override
@@ -506,6 +530,49 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture> impl
         }
 
         return pictureTagCategoryVo;
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void deletePictureById(Long picId) {
+        // 判断图片是否存在
+        Picture picture = this.getById(picId);
+        ThrowUtils.throwIf(picture == null, ErrorCode.NOT_FOUND_ERROR);
+        // 删除图片与分类标签的绑定关系
+        pictureCategoryTagService.lambdaUpdate()
+                .eq(PictureCategoryTag::getPictureId, picId)
+                .remove();
+        // 删除图片
+        this.deleteById(picId);
+    }
+
+    /**
+     * 校验ID列表
+     *
+     * @param idList ID列表
+     */
+    private void validIdList(List<Long> idList) {
+        if (CollUtil.isEmpty(idList)) {
+            return;
+        }
+        for (Long id : idList) {
+            if (id != null && id <= 0) {
+                throw new BusinessException(ErrorCode.PARAMS_ERROR);
+            }
+        }
+    }
+
+    /**
+     * 校验登录用户是否有更新权限
+     *
+     * @param loginUser  登录用户
+     * @param mustUserId 资源所属用户ID
+     */
+    private void checkUpdateAuth(UserVo loginUser, Long mustUserId) {
+        Long loginUserId = loginUser.getUserId();
+        if (!mustUserId.equals(loginUserId) && !UserRoleEnum.ADMIN.getValue().equals(loginUser.getUserRole())) {
+            throw new BusinessException(ErrorCode.NO_AUTH_ERROR);
+        }
     }
 }
 

@@ -72,8 +72,8 @@ public class PictureController {
     @DeleteMapping("/delete/{picId}")
     public BaseResponse<Boolean> deletePictureById(@PathVariable Long picId) {
         ThrowUtils.throwIf(picId == null || picId <= 0, ErrorCode.PARAMS_ERROR);
-        boolean isSuccess = pictureService.deleteById(picId);
-        return ResultUtils.success(isSuccess);
+        pictureService.deletePictureById(picId);
+        return ResultUtils.success(true);
     }
 
     @ApiOperation("分页查询图片（仅管理员）")
@@ -111,21 +111,12 @@ public class PictureController {
         return ResultUtils.success(pageResult);
     }
 
-    @ApiOperation("更新图片信息（仅管理员）")
-    @PreAuthorize(role = UserRoleEnum.ADMIN)
+    @ApiOperation("更新图片信息")
     @PutMapping("/update")
-    public BaseResponse<Boolean> updatePictureByAdmin(@RequestBody PictureUpdateDto updateDto) {
+    public BaseResponse<Boolean> updatePicture(@RequestBody PictureUpdateDto updateDto) {
         ThrowUtils.throwIf(updateDto == null, ErrorCode.PARAMS_ERROR);
-        boolean isSuccess = pictureService.updatePictureByAdmin(updateDto);
+        boolean isSuccess = pictureService.updatePicture(updateDto);
         return ResultUtils.success(isSuccess);
-    }
-
-    @ApiOperation("编辑图片信息")
-    @PutMapping("/edit")
-    public BaseResponse<Boolean> editPicture(@RequestBody PictureEditDto editDto) {
-        ThrowUtils.throwIf(editDto == null, ErrorCode.PARAMS_ERROR);
-        pictureService.editPicture(editDto);
-        return ResultUtils.success(true);
     }
 
     @ApiOperation("获取图片标签分类列表")
