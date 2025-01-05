@@ -17,6 +17,7 @@ import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -56,6 +57,15 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category> i
         CategoryService proxyService = (CategoryService) AopContext.currentProxy();
         boolean saved = proxyService.saveBatch(categoryList);
         ThrowUtils.throwIf(!saved, ErrorCode.OPERATION_ERROR);
+    }
+
+    @Override
+    public List<String> listCategoryName() {
+        List<Category> categoryList = this.list();
+        if (CollUtil.isEmpty(categoryList)) {
+            return Collections.emptyList();
+        }
+        return categoryList.stream().map(Category::getName).toList();
     }
 
     @Override

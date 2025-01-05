@@ -31,4 +31,11 @@ public interface CategoryService extends IService<Category> {
      * @param categoryNameList 分类列表
      */
     void addBatchCategory(List<String> categoryNameList);
+
+    /**
+     * 获取分类名称列表
+     *
+     * @return 名称列表
+     */
+    List<String> listCategoryName();
 }

@@ -17,6 +17,7 @@ import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -95,6 +96,15 @@ public class TagServiceImpl extends ServiceImpl<TagMapper, Tag> implements TagSe
         updateTag.setName(name);
         boolean updated = this.updateById(updateTag);
         ThrowUtils.throwIf(!updated, ErrorCode.OPERATION_ERROR);
+    }
+
+    @Override
+    public List<String> listTagName() {
+        List<Tag> tagList = this.list();
+        if (CollUtil.isEmpty(tagList)) {
+            return Collections.emptyList();
+        }
+        return tagList.stream().map(Tag::getName).toList();
     }
 }
 

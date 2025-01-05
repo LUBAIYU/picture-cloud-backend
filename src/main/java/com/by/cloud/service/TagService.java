@@ -31,4 +31,11 @@ public interface TagService extends IService<Tag> {
      * @param updateDto 请求参数
      */
     void updateTagById(TagUpdateDto updateDto);
+
+    /**
+     * 获取标签名称列表
+     *
+     * @return 标签名称列表
+     */
+    List<String> listTagName();
 }

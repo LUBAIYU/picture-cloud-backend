@@ -65,11 +65,11 @@ public class CategoryController {
         return ResultUtils.success(category);
     }
 
-    @ApiOperation("查询分类列表")
+    @ApiOperation("查询分类名称列表")
     @PreAuthorize(role = UserRoleEnum.ADMIN)
     @GetMapping("/list")
-    public BaseResponse<List<Category>> listCategory() {
-        List<Category> categoryList = categoryService.list();
-        return ResultUtils.success(categoryList);
+    public BaseResponse<List<String>> listCategoryName() {
+        List<String> categoryNameList = categoryService.listCategoryName();
+        return ResultUtils.success(categoryNameList);
     }
 }

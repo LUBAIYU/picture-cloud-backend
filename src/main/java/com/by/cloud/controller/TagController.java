@@ -68,8 +68,8 @@ public class TagController {
     @ApiOperation("查询标签列表")
     @PreAuthorize(role = UserRoleEnum.ADMIN)
     @GetMapping("/list")
-    public BaseResponse<List<Tag>> listTag() {
-        List<Tag> tagList = tagService.list();
-        return ResultUtils.success(tagList);
+    public BaseResponse<List<String>> listTagName() {
+        List<String> tagNameList = tagService.listTagName();
+        return ResultUtils.success(tagNameList);
     }
 }

@@ -10,7 +10,9 @@ import com.by.cloud.model.dto.picture.*;
 import com.by.cloud.model.entity.Picture;
 import com.by.cloud.model.vo.PictureTagCategoryVo;
 import com.by.cloud.model.vo.PictureVo;
+import com.by.cloud.service.CategoryService;
 import com.by.cloud.service.PictureService;
+import com.by.cloud.service.TagService;
 import com.by.cloud.utils.ResultUtils;
 import com.by.cloud.utils.ThrowUtils;
 import io.swagger.annotations.Api;
@@ -20,7 +22,6 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.annotation.Resource;
-import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -34,6 +35,12 @@ public class PictureController {
 
     @Resource
     private PictureService pictureService;
+
+    @Resource
+    private CategoryService categoryService;
+
+    @Resource
+    private TagService tagService;
 
     @ApiOperation("上传图片")
     @PostMapping("/upload")
@@ -134,8 +141,8 @@ public class PictureController {
     @GetMapping("/tag_category")
     public BaseResponse<PictureTagCategoryVo> listPictureTagCategory() {
         PictureTagCategoryVo pictureTagCategoryVo = new PictureTagCategoryVo();
-        List<String> tagList = Arrays.asList("热门", "搞笑", "生活", "高清", "艺术", "校园", "背景", "简历");
-        List<String> categoryList = Arrays.asList("模板", "电商", "表情包", "素材", "海报");
+        List<String> tagList = tagService.listTagName();
+        List<String> categoryList = categoryService.listCategoryName();
         pictureTagCategoryVo.setTagList(tagList);
         pictureTagCategoryVo.setCategoryList(categoryList);
         return ResultUtils.success(pictureTagCategoryVo);
