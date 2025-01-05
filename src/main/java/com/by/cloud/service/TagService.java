@@ -3,6 +3,7 @@ package com.by.cloud.service;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.by.cloud.model.dto.tag.TagUpdateDto;
 import com.by.cloud.model.entity.Tag;
+import com.by.cloud.model.vo.tag.TagListVo;
 
 import java.util.List;
 
@@ -33,9 +34,9 @@ public interface TagService extends IService<Tag> {
     void updateTagById(TagUpdateDto updateDto);
 
     /**
-     * 获取标签名称列表
+     * 获取标签列表
      *
-     * @return 标签名称列表
+     * @return 标签列表
      */
-    List<String> listTagName();
+    List<TagListVo> listTag();
 }

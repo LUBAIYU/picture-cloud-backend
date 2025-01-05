@@ -1,4 +1,4 @@
-package com.by.cloud.model.vo;
+package com.by.cloud.model.vo.user;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.annotations.ApiModelProperty;

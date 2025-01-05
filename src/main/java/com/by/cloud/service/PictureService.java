@@ -4,8 +4,9 @@ import com.baomidou.mybatisplus.extension.service.IService;
 import com.by.cloud.common.PageResult;
 import com.by.cloud.model.dto.picture.*;
 import com.by.cloud.model.entity.Picture;
-import com.by.cloud.model.vo.PictureVo;
-import com.by.cloud.model.vo.UserVo;
+import com.by.cloud.model.vo.picture.PictureTagCategoryVo;
+import com.by.cloud.model.vo.picture.PictureVo;
+import com.by.cloud.model.vo.user.UserVo;
 
 /**
  * @author lzh
@@ -105,4 +106,11 @@ public interface PictureService extends IService<Picture> {
      * @return 分页结果
      */
     PageResult<PictureVo> queryPictureVoByPageWithCache(PicturePageDto pageDto);
+
+    /**
+     * 获取图片标签分类列表
+     *
+     * @return 图片标签分类列表
+     */
+    PictureTagCategoryVo listPictureTagCategory();
 }

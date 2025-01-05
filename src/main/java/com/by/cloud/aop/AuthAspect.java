@@ -3,7 +3,7 @@ package com.by.cloud.aop;
 import com.by.cloud.enums.ErrorCode;
 import com.by.cloud.enums.UserRoleEnum;
 import com.by.cloud.exception.BusinessException;
-import com.by.cloud.model.vo.UserVo;
+import com.by.cloud.model.vo.user.UserVo;
 import com.by.cloud.service.UserService;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;

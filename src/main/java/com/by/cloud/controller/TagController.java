@@ -8,6 +8,7 @@ import com.by.cloud.enums.ErrorCode;
 import com.by.cloud.enums.UserRoleEnum;
 import com.by.cloud.model.dto.tag.TagUpdateDto;
 import com.by.cloud.model.entity.Tag;
+import com.by.cloud.model.vo.tag.TagListVo;
 import com.by.cloud.service.TagService;
 import com.by.cloud.utils.ResultUtils;
 import com.by.cloud.utils.ThrowUtils;
@@ -68,8 +69,8 @@ public class TagController {
     @ApiOperation("查询标签列表")
     @PreAuthorize(role = UserRoleEnum.ADMIN)
     @GetMapping("/list")
-    public BaseResponse<List<String>> listTagName() {
-        List<String> tagNameList = tagService.listTagName();
-        return ResultUtils.success(tagNameList);
+    public BaseResponse<List<TagListVo>> listTag() {
+        List<TagListVo> tagListVos = tagService.listTag();
+        return ResultUtils.success(tagListVos);
     }
 }

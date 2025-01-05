@@ -9,6 +9,7 @@ import com.by.cloud.mapper.TagMapper;
 import com.by.cloud.model.dto.tag.TagUpdateDto;
 import com.by.cloud.model.entity.PictureCategoryTag;
 import com.by.cloud.model.entity.Tag;
+import com.by.cloud.model.vo.tag.TagListVo;
 import com.by.cloud.service.PictureCategoryTagService;
 import com.by.cloud.service.TagService;
 import com.by.cloud.utils.ThrowUtils;
@@ -99,12 +100,19 @@ public class TagServiceImpl extends ServiceImpl<TagMapper, Tag> implements TagSe
     }
 
     @Override
-    public List<String> listTagName() {
+    public List<TagListVo> listTag() {
         List<Tag> tagList = this.list();
         if (CollUtil.isEmpty(tagList)) {
             return Collections.emptyList();
         }
-        return tagList.stream().map(Tag::getName).toList();
+        List<TagListVo> tagListVos = new ArrayList<>();
+        for (Tag tag : tagList) {
+            TagListVo tagListVo = new TagListVo();
+            tagListVo.setId(tag.getId());
+            tagListVo.setName(tag.getName());
+            tagListVos.add(tagListVo);
+        }
+        return tagListVos;
     }
 }
 

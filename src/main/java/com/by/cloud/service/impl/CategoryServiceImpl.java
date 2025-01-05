@@ -9,6 +9,7 @@ import com.by.cloud.mapper.CategoryMapper;
 import com.by.cloud.model.dto.category.CategoryUpdateDto;
 import com.by.cloud.model.entity.Category;
 import com.by.cloud.model.entity.PictureCategoryTag;
+import com.by.cloud.model.vo.category.CategoryListVo;
 import com.by.cloud.service.CategoryService;
 import com.by.cloud.service.PictureCategoryTagService;
 import com.by.cloud.utils.ThrowUtils;
@@ -60,12 +61,19 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category> i
     }
 
     @Override
-    public List<String> listCategoryName() {
+    public List<CategoryListVo> listCategory() {
         List<Category> categoryList = this.list();
         if (CollUtil.isEmpty(categoryList)) {
             return Collections.emptyList();
         }
-        return categoryList.stream().map(Category::getName).toList();
+        List<CategoryListVo> categoryListVos = new ArrayList<>();
+        for (Category category : categoryList) {
+            CategoryListVo categoryListVo = new CategoryListVo();
+            categoryListVo.setId(category.getId());
+            categoryListVo.setName(category.getName());
+            categoryListVos.add(categoryListVo);
+        }
+        return categoryListVos;
     }
 
     @Override

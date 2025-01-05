@@ -25,9 +25,14 @@ import com.by.cloud.model.dto.file.UploadPictureResult;
 import com.by.cloud.model.dto.picture.*;
 import com.by.cloud.model.entity.Picture;
 import com.by.cloud.model.entity.User;
-import com.by.cloud.model.vo.PictureVo;
-import com.by.cloud.model.vo.UserVo;
+import com.by.cloud.model.vo.category.CategoryListVo;
+import com.by.cloud.model.vo.picture.PictureTagCategoryVo;
+import com.by.cloud.model.vo.picture.PictureVo;
+import com.by.cloud.model.vo.tag.TagListVo;
+import com.by.cloud.model.vo.user.UserVo;
+import com.by.cloud.service.CategoryService;
 import com.by.cloud.service.PictureService;
+import com.by.cloud.service.TagService;
 import com.by.cloud.service.UserService;
 import com.by.cloud.utils.ThrowUtils;
 import com.github.benmanes.caffeine.cache.Cache;
@@ -72,6 +77,12 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture> impl
 
     @Resource
     private StringRedisTemplate stringRedisTemplate;
+
+    @Resource
+    private CategoryService categoryService;
+
+    @Resource
+    private TagService tagService;
 
     /**
      * 本地缓存
@@ -467,6 +478,34 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture> impl
 
         // 返回结果
         return voPageResult;
+    }
+
+    @Override
+    public PictureTagCategoryVo listPictureTagCategory() {
+        // 创建返回对象
+        PictureTagCategoryVo pictureTagCategoryVo = new PictureTagCategoryVo();
+
+        // 获取分类名称列表
+        List<CategoryListVo> categoryListVos = categoryService.listCategory();
+        if (CollUtil.isEmpty(categoryListVos)) {
+            pictureTagCategoryVo.setCategoryList(Collections.emptyList());
+        } else {
+            pictureTagCategoryVo.setCategoryList(categoryListVos.stream()
+                    .map(CategoryListVo::getName)
+                    .toList());
+        }
+
+        // 获取标签名称列表
+        List<TagListVo> tagListVos = tagService.listTag();
+        if (CollUtil.isEmpty(tagListVos)) {
+            pictureTagCategoryVo.setTagList(Collections.emptyList());
+        } else {
+            pictureTagCategoryVo.setTagList(tagListVos.stream()
+                    .map(TagListVo::getName)
+                    .toList());
+        }
+
+        return pictureTagCategoryVo;
     }
 }
 

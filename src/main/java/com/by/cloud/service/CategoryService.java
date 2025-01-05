@@ -3,6 +3,7 @@ package com.by.cloud.service;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.by.cloud.model.dto.category.CategoryUpdateDto;
 import com.by.cloud.model.entity.Category;
+import com.by.cloud.model.vo.category.CategoryListVo;
 
 import java.util.List;
 
@@ -33,9 +34,9 @@ public interface CategoryService extends IService<Category> {
     void addBatchCategory(List<String> categoryNameList);
 
     /**
-     * 获取分类名称列表
+     * 获取分类列表
      *
-     * @return 名称列表
+     * @return 分类列表
      */
-    List<String> listCategoryName();
+    List<CategoryListVo> listCategory();
 }

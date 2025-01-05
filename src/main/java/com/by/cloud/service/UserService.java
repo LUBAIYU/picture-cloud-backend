@@ -7,8 +7,8 @@ import com.by.cloud.model.dto.user.UserPageDto;
 import com.by.cloud.model.dto.user.UserRegisterDto;
 import com.by.cloud.model.dto.user.UserUpdateDto;
 import com.by.cloud.model.entity.User;
-import com.by.cloud.model.vo.UserLoginVo;
-import com.by.cloud.model.vo.UserVo;
+import com.by.cloud.model.vo.user.UserLoginVo;
+import com.by.cloud.model.vo.user.UserVo;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;

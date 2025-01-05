@@ -1,9 +1,10 @@
-package com.by.cloud.model.vo;
+package com.by.cloud.model.vo.picture;
 
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.by.cloud.model.entity.Picture;
+import com.by.cloud.model.vo.user.UserVo;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;

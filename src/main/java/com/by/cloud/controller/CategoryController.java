@@ -8,6 +8,7 @@ import com.by.cloud.enums.ErrorCode;
 import com.by.cloud.enums.UserRoleEnum;
 import com.by.cloud.model.dto.category.CategoryUpdateDto;
 import com.by.cloud.model.entity.Category;
+import com.by.cloud.model.vo.category.CategoryListVo;
 import com.by.cloud.service.CategoryService;
 import com.by.cloud.utils.ResultUtils;
 import com.by.cloud.utils.ThrowUtils;
@@ -65,11 +66,11 @@ public class CategoryController {
         return ResultUtils.success(category);
     }
 
-    @ApiOperation("查询分类名称列表")
+    @ApiOperation("查询分类列表")
     @PreAuthorize(role = UserRoleEnum.ADMIN)
     @GetMapping("/list")
-    public BaseResponse<List<String>> listCategoryName() {
-        List<String> categoryNameList = categoryService.listCategoryName();
-        return ResultUtils.success(categoryNameList);
+    public BaseResponse<List<CategoryListVo>> listCategoryName() {
+        List<CategoryListVo> categoryListVos = categoryService.listCategory();
+        return ResultUtils.success(categoryListVos);
     }
 }
