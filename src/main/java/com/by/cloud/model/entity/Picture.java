@@ -23,7 +23,6 @@ public class Picture implements Serializable {
      * id
      */
     @TableId(type = IdType.ASSIGN_ID)
-    @JsonFormat(shape = JsonFormat.Shape.STRING)
     private Long picId;
 
     /**
@@ -79,7 +78,6 @@ public class Picture implements Serializable {
     /**
      * 创建用户 id
      */
-    @JsonFormat(shape = JsonFormat.Shape.STRING)
     private Long userId;
 
     /**
@@ -100,21 +98,25 @@ public class Picture implements Serializable {
     /**
      * 审核时间
      */
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime reviewTime;
 
     /**
      * 创建时间
      */
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime createTime;
 
     /**
      * 编辑时间
      */
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime editTime;
 
     /**
      * 更新时间
      */
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime updateTime;
 
     /**

@@ -22,25 +22,21 @@ public class PictureCategoryTag implements Serializable {
      * 主键ID
      */
     @TableId(type = IdType.ASSIGN_ID)
-    @JsonFormat(shape = JsonFormat.Shape.STRING)
     private Long id;
 
     /**
      * 图片ID
      */
-    @JsonFormat(shape = JsonFormat.Shape.STRING)
     private Long pictureId;
 
     /**
      * 分类ID
      */
-    @JsonFormat(shape = JsonFormat.Shape.STRING)
     private Long categoryId;
 
     /**
      * 标签ID
      */
-    @JsonFormat(shape = JsonFormat.Shape.STRING)
     private Long tagId;
 
     @Serial

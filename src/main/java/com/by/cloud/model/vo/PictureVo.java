@@ -21,7 +21,6 @@ import java.util.List;
 @Data
 public class PictureVo implements Serializable {
 
-    @JsonFormat(shape = JsonFormat.Shape.STRING)
     @ApiModelProperty("图片ID")
     private Long picId;
 

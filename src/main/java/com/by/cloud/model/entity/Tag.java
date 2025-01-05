@@ -20,7 +20,6 @@ public class Tag implements Serializable {
      * 主键ID
      */
     @TableId(type = IdType.ASSIGN_ID)
-    @JsonFormat(shape = JsonFormat.Shape.STRING)
     private Long id;
 
     /**
@@ -36,11 +35,13 @@ public class Tag implements Serializable {
     /**
      * 创建时间
      */
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime createTime;
 
     /**
      * 更新时间
      */
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime updateTime;
 
     /**

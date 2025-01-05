@@ -56,7 +56,8 @@ create table if not exists category
     name        varchar(256)                       not null comment '分类名称',
     create_time datetime default CURRENT_TIMESTAMP not null comment '创建时间',
     update_time datetime default CURRENT_TIMESTAMP not null on update CURRENT_TIMESTAMP comment '更新时间',
-    is_delete   tinyint  default 0                 not null comment '是否删除'
+    is_delete   tinyint  default 0                 not null comment '是否删除',
+    UNIQUE KEY uk_name (name) -- 唯一索引，防止名称重复
 ) comment '分类表' collate = utf8mb4_unicode_ci;
 
 -- 标签表
@@ -67,7 +68,8 @@ create table if not exists tag
     use_count   int      default 0                 not null comment '使用次数',
     create_time datetime default CURRENT_TIMESTAMP not null comment '创建时间',
     update_time datetime default CURRENT_TIMESTAMP not null on update CURRENT_TIMESTAMP comment '更新时间',
-    is_delete   tinyint  default 0                 not null comment '是否删除'
+    is_delete   tinyint  default 0                 not null comment '是否删除',
+    UNIQUE KEY uk_name (name) -- 唯一索引，防止名称重复
 ) comment '标签表' collate = utf8mb4_unicode_ci;
 
 -- 图片分类标签关联表

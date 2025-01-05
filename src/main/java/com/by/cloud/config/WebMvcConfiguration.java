@@ -3,12 +3,16 @@ package com.by.cloud.config;
 import com.by.cloud.interceptor.JwtInterceptor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.converter.HttpMessageConverter;
+import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurationSupport;
 
 import javax.annotation.Resource;
+import java.util.List;
+import java.util.Objects;
 
 /**
  * 配置类，注册web层相关组件
@@ -21,6 +25,9 @@ public class WebMvcConfiguration extends WebMvcConfigurationSupport {
 
     @Resource
     private JwtInterceptor jwtInterceptor;
+
+    @Resource
+    private MappingJackson2HttpMessageConverter mappingJackson2HttpMessageConverter;
 
     /**
      * 注册自定义拦截器
@@ -65,5 +72,15 @@ public class WebMvcConfiguration extends WebMvcConfigurationSupport {
                 .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
                 .allowedHeaders("*")
                 .exposedHeaders("*");
+    }
+
+    @Override
+    protected void extendMessageConverters(List<HttpMessageConverter<?>> converters) {
+        converters.removeIf(converter -> converter instanceof MappingJackson2HttpMessageConverter);
+        if (Objects.isNull(mappingJackson2HttpMessageConverter)) {
+            converters.add(0, new MappingJackson2HttpMessageConverter());
+        } else {
+            converters.add(0, mappingJackson2HttpMessageConverter);
+        }
     }
 }
