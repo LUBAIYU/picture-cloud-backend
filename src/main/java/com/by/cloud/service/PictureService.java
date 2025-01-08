@@ -114,4 +114,11 @@ public interface PictureService extends IService<Picture> {
      * @param picId 图片ID
      */
     void deletePictureById(Long picId);
+
+    /**
+     * 清理图片文件
+     *
+     * @param picture 图片
+     */
+    void clearPictureFile(Picture picture);
 }

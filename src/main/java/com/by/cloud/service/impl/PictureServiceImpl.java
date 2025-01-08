@@ -11,6 +11,7 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.by.cloud.common.BaseContext;
+import com.by.cloud.common.CosManager;
 import com.by.cloud.common.PageResult;
 import com.by.cloud.common.upload.BasePictureUploadTemplate;
 import com.by.cloud.common.upload.FilePictureUpload;
@@ -42,6 +43,7 @@ import org.jsoup.select.Elements;
 import org.springframework.aop.framework.AopContext;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.DigestUtils;
@@ -68,6 +70,7 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture> impl
     private final CategoryService categoryService;
     private final TagService tagService;
     private final PictureCategoryTagService pictureCategoryTagService;
+    private final CosManager cosManager;
 
     /**
      * 本地缓存
@@ -127,7 +130,7 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture> impl
         PictureService proxyService = (PictureService) AopContext.currentProxy();
         // 使用代理对象调用，防止事务失效
         boolean result = proxyService.saveOrUpdate(picture);
-        ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR, "图片保存失败");
+        ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR);
         return PictureVo.objToVo(picture);
     }
 
@@ -542,8 +545,31 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture> impl
         pictureCategoryTagService.lambdaUpdate()
                 .eq(PictureCategoryTag::getPictureId, picId)
                 .remove();
+        // 删除远程COS图片
+        this.clearPictureFile(picture);
         // 删除图片
         this.deleteById(picId);
+    }
+
+    @Async
+    @Override
+    public void clearPictureFile(Picture picture) {
+        // 校验文件地址是否被多条记录引用
+        String picUrl = picture.getPicUrl();
+        long count = this.lambdaQuery()
+                .eq(Picture::getPicUrl, picUrl)
+                .count();
+        // 如果大于一条，则说明不止被一条记录引用，不清理
+        if (count > 1) {
+            return;
+        }
+        // 删除图片
+        cosManager.deleteObject(picUrl);
+        // 删除缩略图
+        String thumbnailUrl = picture.getThumbnailUrl();
+        if (StrUtil.isNotBlank(thumbnailUrl)) {
+            cosManager.deleteObject(thumbnailUrl);
+        }
     }
 
     /**

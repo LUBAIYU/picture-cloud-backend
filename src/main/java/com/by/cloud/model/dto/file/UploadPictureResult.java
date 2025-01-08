@@ -14,6 +14,9 @@ public class UploadPictureResult implements Serializable {
     @ApiModelProperty("图片url")
     private String picUrl;
 
+    @ApiModelProperty("缩略图url")
+    private String thumbnailUrl;
+
     @ApiModelProperty("图片名称")
     private String picName;
 

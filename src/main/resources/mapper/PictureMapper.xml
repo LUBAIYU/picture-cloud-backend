@@ -7,6 +7,7 @@
     <resultMap id="BaseResultMap" type="com.by.cloud.model.entity.Picture">
         <id property="picId" column="pic_id" jdbcType="BIGINT"/>
         <result property="picUrl" column="pic_url" jdbcType="VARCHAR"/>
+        <result property="thumbnailUrl" column="thumbnail_url" jdbcType="VARCHAR"/>
         <result property="picName" column="pic_name" jdbcType="VARCHAR"/>
         <result property="introduction" column="introduction" jdbcType="VARCHAR"/>
         <result property="category" column="category" jdbcType="VARCHAR"/>
@@ -28,7 +29,7 @@
     </resultMap>
 
     <sql id="Base_Column_List">
-        pic_id,pic_url,pic_name,
+        pic_id,pic_url,thumbnail_url,pic_name,
         introduction,category,tags,
         pic_size,pic_width,pic_height,
         pic_scale,pic_format,user_id,

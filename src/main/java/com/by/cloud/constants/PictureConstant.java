@@ -30,6 +30,11 @@ public interface PictureConstant {
     long MAX_FILE_SIZE = 2 * 1024 * 1024;
 
     /**
+     * 图片文件进行缩略处理的大小要求
+     */
+    long THUMBNAIL_FILE_SIZE = 20 * 1024;
+
+    /**
      * 图片文件允许的后缀
      */
     List<String> ALLOW_SUFFIX_LIST = List.of("jpeg", "png", "jpg", "webp");
