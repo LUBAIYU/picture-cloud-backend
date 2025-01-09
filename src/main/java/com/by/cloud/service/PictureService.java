@@ -31,14 +31,6 @@ public interface PictureService extends IService<Picture> {
     PictureVo getPictureVo(Long picId);
 
     /**
-     * 根据ID删除图片
-     *
-     * @param picId 图片ID
-     * @return 是否删除成功
-     */
-    boolean deleteById(Long picId);
-
-    /**
      * 分页查询图片（仅管理员）
      *
      * @param pageDto 分页参数

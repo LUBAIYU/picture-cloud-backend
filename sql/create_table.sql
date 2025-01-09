@@ -34,6 +34,7 @@ create table if not exists picture
     pic_scale      double                             null comment '图片宽高比例',
     pic_format     varchar(32)                        null comment '图片格式',
     user_id        bigint                             not null comment '创建用户 id',
+    space_id       bigint                             null comment '空间 id (为空表示公共空间)',
     review_status  int      default 0                 not null comment '审核状态：0-待审核；1-通过；2-拒绝',
     review_message varchar(512)                       null comment '审核信息',
     reviewer_id    bigint                             null comment '审核人ID',
@@ -42,12 +43,13 @@ create table if not exists picture
     edit_time      datetime default CURRENT_TIMESTAMP not null comment '编辑时间',
     update_time    datetime default CURRENT_TIMESTAMP not null on update CURRENT_TIMESTAMP comment '更新时间',
     is_delete      tinyint  default 0                 not null comment '是否删除',
-    INDEX idx_name (pic_name),              -- 提升基于图片名称的查询性能
-    INDEX idx_introduction (introduction),  -- 用于模糊搜索图片简介
-    INDEX idx_category (category),          -- 提升基于分类的查询性能
-    INDEX idx_tags (tags),                  -- 提升基于标签的查询性能
-    INDEX idx_user_id (user_id),            -- 提升基于用户 ID 的查询性能
-    INDEX idx_review_status (review_status) -- 提升基于审核状态的查询性能
+    INDEX idx_name (pic_name),               -- 提升基于图片名称的查询性能
+    INDEX idx_introduction (introduction),   -- 用于模糊搜索图片简介
+    INDEX idx_category (category),           -- 提升基于分类的查询性能
+    INDEX idx_tags (tags),                   -- 提升基于标签的查询性能
+    INDEX idx_user_id (user_id),             -- 提升基于用户 ID 的查询性能
+    INDEX idx_review_status (review_status), -- 提升基于审核状态的查询性能
+    INDEX idx_space_id (space_id)            -- 提升基于空间 ID 的查询性能
 ) comment '图片表' collate = utf8mb4_unicode_ci;
 
 -- 分类表

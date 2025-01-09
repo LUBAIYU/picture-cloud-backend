@@ -150,28 +150,6 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture> impl
     }
 
     @Override
-    public boolean deleteById(Long picId) {
-        // 查询图片
-        Picture picture = this.getById(picId);
-        ThrowUtils.throwIf(picture == null, ErrorCode.NOT_FOUND_ERROR);
-
-        // 获取登录用户
-        UserVo loginUser = userService.getLoginUser();
-        Integer loginUserRole = loginUser.getUserRole();
-        Long loginUserId = loginUser.getUserId();
-
-        // 只有创建用户或者管理员可以删除图片
-        if (!picture.getUserId().equals(loginUserId) && !UserRoleEnum.ADMIN.getValue().equals(loginUserRole)) {
-            throw new BusinessException(ErrorCode.NO_AUTH_ERROR);
-        }
-
-        // 删除
-        boolean result = this.removeById(picId);
-        ThrowUtils.throwIf(!result, ErrorCode.SYSTEM_ERROR);
-        return true;
-    }
-
-    @Override
     public PageResult<Picture> queryPictureByPage(PicturePageDto pageDto) {
         // 获取参数
         int current = pageDto.getCurrent();
@@ -541,14 +519,28 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture> impl
         // 判断图片是否存在
         Picture picture = this.getById(picId);
         ThrowUtils.throwIf(picture == null, ErrorCode.NOT_FOUND_ERROR);
+
+        // 获取登录用户
+        UserVo loginUser = userService.getLoginUser();
+        Integer loginUserRole = loginUser.getUserRole();
+        Long loginUserId = loginUser.getUserId();
+
+        // 只有创建用户或者管理员可以删除图片
+        if (!picture.getUserId().equals(loginUserId) && !UserRoleEnum.ADMIN.getValue().equals(loginUserRole)) {
+            throw new BusinessException(ErrorCode.NO_AUTH_ERROR);
+        }
+
         // 删除图片与分类标签的绑定关系
         pictureCategoryTagService.lambdaUpdate()
                 .eq(PictureCategoryTag::getPictureId, picId)
                 .remove();
+
         // 删除远程COS图片
         this.clearPictureFile(picture);
-        // 删除图片
-        this.deleteById(picId);
+
+        // 删除
+        boolean result = this.removeById(picId);
+        ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR);
     }
 
     @Async

@@ -1,0 +1,92 @@
+package com.by.cloud.controller;
+
+import com.by.cloud.aop.PreAuthorize;
+import com.by.cloud.common.BaseResponse;
+import com.by.cloud.common.PageResult;
+import com.by.cloud.enums.ErrorCode;
+import com.by.cloud.enums.UserRoleEnum;
+import com.by.cloud.model.dto.space.SpaceEditDto;
+import com.by.cloud.model.dto.space.SpacePageDto;
+import com.by.cloud.model.dto.space.SpaceUpdateDto;
+import com.by.cloud.model.entity.Space;
+import com.by.cloud.model.vo.space.SpaceVo;
+import com.by.cloud.service.SpaceService;
+import com.by.cloud.utils.ResultUtils;
+import com.by.cloud.utils.ThrowUtils;
+import io.swagger.annotations.ApiOperation;
+import org.springframework.web.bind.annotation.*;
+
+import javax.annotation.Resource;
+
+/**
+ * @author lzh
+ */
+@RestController
+@RequestMapping("/space")
+public class SpaceController {
+
+    @Resource
+    private SpaceService spaceService;
+
+    @ApiOperation("删除空间信息")
+    @DeleteMapping("/delete/{id}")
+    public BaseResponse<Boolean> deleteSpaceById(@PathVariable Long id) {
+        ThrowUtils.throwIf(id == null || id <= 0, ErrorCode.PARAMS_ERROR);
+        spaceService.deleteById(id);
+        return ResultUtils.success(true);
+    }
+
+    @ApiOperation("编辑空间信息")
+    @PutMapping("/edit")
+    public BaseResponse<Boolean> editSpaceById(@RequestBody SpaceEditDto editDto) {
+        ThrowUtils.throwIf(editDto == null, ErrorCode.PARAMS_ERROR);
+        spaceService.editSpaceById(editDto);
+        return ResultUtils.success(true);
+    }
+
+    @ApiOperation("更新空间信息（仅管理员）")
+    @PreAuthorize(role = UserRoleEnum.ADMIN)
+    @PutMapping("/update")
+    public BaseResponse<Boolean> updateSpaceById(@RequestBody SpaceUpdateDto updateDto) {
+        ThrowUtils.throwIf(updateDto == null, ErrorCode.PARAMS_ERROR);
+        spaceService.updateSpaceById(updateDto);
+        return ResultUtils.success(true);
+    }
+
+    @ApiOperation("根据ID获取空间（仅管理员）")
+    @PreAuthorize(role = UserRoleEnum.ADMIN)
+    @GetMapping("/get")
+    public BaseResponse<Space> getSpaceById(@RequestParam("id") Long id) {
+        ThrowUtils.throwIf(id == null || id <= 0, ErrorCode.PARAMS_ERROR);
+        Space space = spaceService.getById(id);
+        return ResultUtils.success(space);
+    }
+
+    @ApiOperation("根据ID获取空间（封装类）")
+    @GetMapping("/vo/get")
+    public BaseResponse<SpaceVo> getSpaceVoById(@RequestParam("id") Long id) {
+        ThrowUtils.throwIf(id == null || id <= 0, ErrorCode.PARAMS_ERROR);
+        SpaceVo spaceVo = spaceService.getSpaceVoById(id);
+        return ResultUtils.success(spaceVo);
+    }
+
+    @ApiOperation("分页查询空间（仅管理员）")
+    @PreAuthorize(role = UserRoleEnum.ADMIN)
+    @PostMapping("/page")
+    public BaseResponse<PageResult<Space>> querySpaceByPage(@RequestBody SpacePageDto pageDto) {
+        ThrowUtils.throwIf(pageDto == null, ErrorCode.PARAMS_ERROR);
+        PageResult<Space> pageResult = spaceService.querySpaceByPage(pageDto);
+        return ResultUtils.success(pageResult);
+    }
+
+    @ApiOperation("分页查询空间（封装类）")
+    @PostMapping("/vo/page")
+    public BaseResponse<PageResult<SpaceVo>> querySpaceVoByPage(@RequestBody SpacePageDto pageDto) {
+        ThrowUtils.throwIf(pageDto == null, ErrorCode.PARAMS_ERROR);
+        // 限制爬虫
+        int pageSize = pageDto.getPageSize();
+        ThrowUtils.throwIf(pageSize > 20, ErrorCode.PARAMS_ERROR);
+        PageResult<SpaceVo> pageResult = spaceService.querySpaceVoByPage(pageDto);
+        return ResultUtils.success(pageResult);
+    }
+}

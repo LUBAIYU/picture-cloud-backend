@@ -61,6 +61,9 @@ public class PictureVo implements Serializable {
     @ApiModelProperty("创建用户ID")
     private Long userId;
 
+    @ApiModelProperty("空间 id（为空表示公共空间）")
+    private Long spaceId;
+
     @ApiModelProperty("创建用户")
     private UserVo userVo;
 
