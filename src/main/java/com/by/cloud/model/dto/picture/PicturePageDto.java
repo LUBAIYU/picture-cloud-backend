@@ -35,4 +35,10 @@ public class PicturePageDto extends PageRequest implements Serializable {
 
     @ApiModelProperty("审核信息")
     private String reviewMessage;
+
+    @ApiModelProperty("空间ID")
+    private Long spaceId;
+
+    @ApiModelProperty("是否只查询 spaceId 为 null 的数据")
+    private boolean nullSpaceId;
 }

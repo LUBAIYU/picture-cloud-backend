@@ -5,6 +5,7 @@ import com.by.cloud.common.BaseResponse;
 import com.by.cloud.common.PageResult;
 import com.by.cloud.enums.ErrorCode;
 import com.by.cloud.enums.UserRoleEnum;
+import com.by.cloud.model.dto.space.SpaceCreateDto;
 import com.by.cloud.model.dto.space.SpaceEditDto;
 import com.by.cloud.model.dto.space.SpacePageDto;
 import com.by.cloud.model.dto.space.SpaceUpdateDto;
@@ -88,5 +89,13 @@ public class SpaceController {
         ThrowUtils.throwIf(pageSize > 20, ErrorCode.PARAMS_ERROR);
         PageResult<SpaceVo> pageResult = spaceService.querySpaceVoByPage(pageDto);
         return ResultUtils.success(pageResult);
+    }
+
+    @ApiOperation("创建空间")
+    @PostMapping("/create")
+    public BaseResponse<Long> createSpace(@RequestBody SpaceCreateDto createDto) {
+        ThrowUtils.throwIf(createDto == null, ErrorCode.PARAMS_ERROR);
+        long id = spaceService.createSpace(createDto);
+        return ResultUtils.success(id);
     }
 }

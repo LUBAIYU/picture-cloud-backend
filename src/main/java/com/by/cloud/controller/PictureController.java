@@ -1,16 +1,20 @@
 package com.by.cloud.controller;
 
 import com.by.cloud.aop.PreAuthorize;
+import com.by.cloud.common.BaseContext;
 import com.by.cloud.common.BaseResponse;
 import com.by.cloud.common.PageResult;
 import com.by.cloud.enums.ErrorCode;
 import com.by.cloud.enums.PictureReviewStatusEnum;
 import com.by.cloud.enums.UserRoleEnum;
+import com.by.cloud.exception.BusinessException;
 import com.by.cloud.model.dto.picture.*;
 import com.by.cloud.model.entity.Picture;
+import com.by.cloud.model.entity.Space;
 import com.by.cloud.model.vo.picture.PictureTagCategoryVo;
 import com.by.cloud.model.vo.picture.PictureVo;
 import com.by.cloud.service.PictureService;
+import com.by.cloud.service.SpaceService;
 import com.by.cloud.utils.ResultUtils;
 import com.by.cloud.utils.ThrowUtils;
 import io.swagger.annotations.Api;
@@ -32,6 +36,9 @@ public class PictureController {
 
     @Resource
     private PictureService pictureService;
+
+    @Resource
+    private SpaceService spaceService;
 
     @ApiOperation("上传图片")
     @PostMapping("/upload")
@@ -92,12 +99,26 @@ public class PictureController {
         // 限制爬虫
         int pageSize = pageDto.getPageSize();
         ThrowUtils.throwIf(pageSize > 20, ErrorCode.PARAMS_ERROR);
-        // 用户只能看到审核通过的图片
-        pageDto.setReviewStatus(PictureReviewStatusEnum.PASS.getValue());
+        // 空间权限校验
+        Long spaceId = pageDto.getSpaceId();
+        if (spaceId == null) {
+            // 公共图库,用户只能看到审核通过的图片
+            pageDto.setReviewStatus(PictureReviewStatusEnum.PASS.getValue());
+            pageDto.setNullSpaceId(true);
+        } else {
+            // 私有空间，只有空间创建者才能查看
+            Long loginUserId = BaseContext.getLoginUserId();
+            Space space = spaceService.getById(spaceId);
+            ThrowUtils.throwIf(space == null, ErrorCode.NOT_FOUND_ERROR, "空间不存在");
+            if (!loginUserId.equals(space.getUserId())) {
+                throw new BusinessException(ErrorCode.NO_AUTH_ERROR, "没有查看该空间的权限");
+            }
+        }
         PageResult<PictureVo> pageResult = pictureService.queryPictureVoByPage(pageDto);
         return ResultUtils.success(pageResult);
     }
 
+    @Deprecated
     @ApiOperation("分页查询图片（封装类），多级缓存")
     @PostMapping("/cache/vo/page")
     public BaseResponse<PageResult<PictureVo>> queryPictureVoByPageWithCache(@RequestBody PicturePageDto pageDto) {

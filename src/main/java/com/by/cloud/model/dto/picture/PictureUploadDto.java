@@ -19,4 +19,7 @@ public class PictureUploadDto implements Serializable {
 
     @ApiModelProperty("图片名称")
     private String picName;
+
+    @ApiModelProperty("空间ID")
+    private Long spaceId;
 }

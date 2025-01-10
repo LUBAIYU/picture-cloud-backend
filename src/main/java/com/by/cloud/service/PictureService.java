@@ -113,4 +113,11 @@ public interface PictureService extends IService<Picture> {
      * @param picture 图片
      */
     void clearPictureFile(Picture picture);
+
+    /**
+     * 校验图片权限
+     *
+     * @param picture 图片
+     */
+    void checkPictureAuth(Picture picture);
 }

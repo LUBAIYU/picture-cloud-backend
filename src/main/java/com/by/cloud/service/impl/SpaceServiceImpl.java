@@ -14,6 +14,7 @@ import com.by.cloud.enums.ErrorCode;
 import com.by.cloud.enums.SpaceLevelEnum;
 import com.by.cloud.exception.BusinessException;
 import com.by.cloud.mapper.SpaceMapper;
+import com.by.cloud.model.dto.space.SpaceCreateDto;
 import com.by.cloud.model.dto.space.SpaceEditDto;
 import com.by.cloud.model.dto.space.SpacePageDto;
 import com.by.cloud.model.dto.space.SpaceUpdateDto;
@@ -25,12 +26,10 @@ import com.by.cloud.service.SpaceService;
 import com.by.cloud.service.UserService;
 import com.by.cloud.utils.ThrowUtils;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import javax.annotation.Resource;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -41,6 +40,9 @@ public class SpaceServiceImpl extends ServiceImpl<SpaceMapper, Space> implements
 
     @Resource
     private UserService userService;
+
+    @Resource
+    private TransactionTemplate transactionTemplate;
 
     @Override
     public void validSpace(Space space, boolean isAdd) {
@@ -228,6 +230,48 @@ public class SpaceServiceImpl extends ServiceImpl<SpaceMapper, Space> implements
 
         // 封装返回
         return PageResult.of(pageResult.getTotal(), spaceVoList);
+    }
+
+    @Override
+    public long createSpace(SpaceCreateDto addDto) {
+        // 1.填充默认参数
+        Space space = new Space();
+        BeanUtil.copyProperties(addDto, space);
+        if (StrUtil.isBlank(space.getSpaceName())) {
+            space.setSpaceName("默认空间");
+        }
+        if (space.getSpaceLevel() == null) {
+            space.setSpaceLevel(SpaceLevelEnum.COMMON.getValue());
+        }
+        // 填充默认级别和大小
+        this.fillSpaceBySpaceLevel(space);
+        // 2.校验参数
+        this.validSpace(space, true);
+        // 3.校验权限，非管理员只能创建普通级别的空间
+        Long loginUserId = BaseContext.getLoginUserId();
+        space.setUserId(loginUserId);
+        if (SpaceLevelEnum.COMMON.getValue() != space.getSpaceLevel() && !userService.isAdmin(loginUserId)) {
+            throw new BusinessException(ErrorCode.NO_AUTH_ERROR, "无权限创建指定级别的空间");
+        }
+
+        // 4.控制同一个用户只能创建一个私有空间,intern()保证锁是同一个对象
+        String lock = String.valueOf(loginUserId).intern();
+        synchronized (lock) {
+            Long spaceId = transactionTemplate.execute(status -> {
+                // 判断是否已存在空间
+                boolean exists = this.lambdaQuery()
+                        .eq(Space::getUserId, loginUserId)
+                        .exists();
+                // 如果存在则抛异常
+                ThrowUtils.throwIf(exists, ErrorCode.OPERATION_ERROR, "每个用户只能创建一个私有空间");
+                // 插入数据
+                boolean saved = this.save(space);
+                ThrowUtils.throwIf(!saved, ErrorCode.OPERATION_ERROR, "保存空间到数据库失败");
+                return space.getId();
+            });
+            // 如果为空返回-1
+            return Optional.ofNullable(spaceId).orElse(-1L);
+        }
     }
 }
 

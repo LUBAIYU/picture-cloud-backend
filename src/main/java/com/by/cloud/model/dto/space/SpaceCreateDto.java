@@ -9,7 +9,7 @@ import java.io.Serializable;
  * @author lzh
  */
 @Data
-public class SpaceAddDto implements Serializable {
+public class SpaceCreateDto implements Serializable {
 
     @ApiModelProperty("空间名称")
     private String spaceName;
