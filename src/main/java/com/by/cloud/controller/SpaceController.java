@@ -4,26 +4,32 @@ import com.by.cloud.aop.PreAuthorize;
 import com.by.cloud.common.BaseResponse;
 import com.by.cloud.common.PageResult;
 import com.by.cloud.enums.ErrorCode;
+import com.by.cloud.enums.SpaceLevelEnum;
 import com.by.cloud.enums.UserRoleEnum;
 import com.by.cloud.model.dto.space.SpaceCreateDto;
 import com.by.cloud.model.dto.space.SpaceEditDto;
 import com.by.cloud.model.dto.space.SpacePageDto;
 import com.by.cloud.model.dto.space.SpaceUpdateDto;
 import com.by.cloud.model.entity.Space;
+import com.by.cloud.model.vo.space.SpaceLevelVo;
 import com.by.cloud.model.vo.space.SpaceVo;
 import com.by.cloud.service.SpaceService;
 import com.by.cloud.utils.ResultUtils;
 import com.by.cloud.utils.ThrowUtils;
+import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * @author lzh
  */
 @RestController
 @RequestMapping("/space")
+@Api(tags = "空间模块")
 public class SpaceController {
 
     @Resource
@@ -97,5 +103,18 @@ public class SpaceController {
         ThrowUtils.throwIf(createDto == null, ErrorCode.PARAMS_ERROR);
         long id = spaceService.createSpace(createDto);
         return ResultUtils.success(id);
+    }
+
+    @ApiOperation("获取空间级别信息列表")
+    @GetMapping("/level/list")
+    public BaseResponse<List<SpaceLevelVo>> listSpaceLevel() {
+        SpaceLevelEnum[] spaceLevelEnums = SpaceLevelEnum.values();
+        List<SpaceLevelVo> spaceLevelVoList = Arrays.stream(spaceLevelEnums).map(spaceLevelEnum -> new SpaceLevelVo(
+                spaceLevelEnum.getText(),
+                spaceLevelEnum.getValue(),
+                spaceLevelEnum.getMaxCount(),
+                spaceLevelEnum.getMaxSize()
+        )).toList();
+        return ResultUtils.success(spaceLevelVoList);
     }
 }
