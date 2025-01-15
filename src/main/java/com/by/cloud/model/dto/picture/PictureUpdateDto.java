@@ -21,6 +21,9 @@ public class PictureUpdateDto implements Serializable {
     @ApiModelProperty("简介")
     private String introduction;
 
+    @ApiModelProperty("空间ID")
+    private Long spaceId;
+
     @ApiModelProperty("分类ID")
     private Long categoryId;
 

@@ -93,7 +93,7 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture> impl
 
         // 校验空间是否存在
         Long spaceId = null;
-        if (dto != null) {
+        if (dto != null && dto.getSpaceId() != null) {
             spaceId = dto.getSpaceId();
             Space space = spaceService.getById(spaceId);
             ThrowUtils.throwIf(space == null, ErrorCode.NOT_FOUND_ERROR, "空间不存在");
@@ -177,12 +177,14 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture> impl
             ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR);
 
             // 更新空间额度
-            boolean update = spaceService.lambdaUpdate()
-                    .eq(Space::getId, finalSpaceId)
-                    .setSql("total_size = total_size + " + picture.getPicSize())
-                    .setSql("total_count = total_count + 1")
-                    .update();
-            ThrowUtils.throwIf(!update, ErrorCode.OPERATION_ERROR);
+            if (finalSpaceId != null) {
+                boolean update = spaceService.lambdaUpdate()
+                        .eq(Space::getId, finalSpaceId)
+                        .setSql("total_size = total_size + " + picture.getPicSize())
+                        .setSql("total_count = total_count + 1")
+                        .update();
+                ThrowUtils.throwIf(!update, ErrorCode.OPERATION_ERROR);
+            }
         });
 
         return PictureVo.objToVo(picture);
@@ -346,20 +348,26 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture> impl
         Picture picture = new Picture();
         BeanUtil.copyProperties(updateDto, picture);
 
-        // 冗余分类与标签
-        Category category = categoryService.lambdaQuery()
-                .eq(Category::getId, categoryId)
-                .one();
-        ThrowUtils.throwIf(category == null, ErrorCode.NOT_FOUND_ERROR);
-        picture.setCategory(category.getName());
-        List<Tag> tagList = tagService.lambdaQuery()
-                .in(Tag::getId, tagIdList)
-                .list();
-        if (CollUtil.isEmpty(tagList) || tagList.size() != tagIdList.size()) {
-            throw new BusinessException(ErrorCode.NOT_FOUND_ERROR);
+        // 如果有传分类，则冗余分类名称
+        if (categoryId != null) {
+            Category category = categoryService.lambdaQuery()
+                    .eq(Category::getId, categoryId)
+                    .one();
+            ThrowUtils.throwIf(category == null, ErrorCode.NOT_FOUND_ERROR);
+            picture.setCategory(category.getName());
         }
-        List<String> tagNameList = tagList.stream().map(Tag::getName).toList();
-        picture.setTags(JSONUtil.toJsonStr(tagNameList));
+
+        // 如果有传标签，则冗余标签列表
+        if (CollUtil.isNotEmpty(tagIdList)) {
+            List<Tag> tagList = tagService.lambdaQuery()
+                    .in(Tag::getId, tagIdList)
+                    .list();
+            if (CollUtil.isEmpty(tagList) || tagList.size() != tagIdList.size()) {
+                throw new BusinessException(ErrorCode.NOT_FOUND_ERROR);
+            }
+            List<String> tagNameList = tagList.stream().map(Tag::getName).toList();
+            picture.setTags(JSONUtil.toJsonStr(tagNameList));
+        }
 
         // 校验
         this.validPicture(picture);
