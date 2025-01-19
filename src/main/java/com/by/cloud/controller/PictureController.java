@@ -1,6 +1,7 @@
 package com.by.cloud.controller;
 
 import com.by.cloud.aop.PreAuthorize;
+import com.by.cloud.api.imagesearch.model.ImageSearchResult;
 import com.by.cloud.common.BaseContext;
 import com.by.cloud.common.BaseResponse;
 import com.by.cloud.common.PageResult;
@@ -24,6 +25,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.annotation.Resource;
+import java.util.List;
 
 /**
  * @author lzh
@@ -163,5 +165,13 @@ public class PictureController {
         ThrowUtils.throwIf(batchDto == null, ErrorCode.PARAMS_ERROR);
         int uploadCount = pictureService.uploadPictureByBatch(batchDto);
         return ResultUtils.success(uploadCount);
+    }
+
+    @ApiOperation("以图搜图")
+    @PostMapping("/search")
+    public BaseResponse<List<ImageSearchResult>> searchPictureByPicture(@RequestBody PictureSearchByPictureDto searchByPictureDto) {
+        ThrowUtils.throwIf(searchByPictureDto == null, ErrorCode.PARAMS_ERROR);
+        List<ImageSearchResult> resultList = pictureService.searchPictureByPicture(searchByPictureDto);
+        return ResultUtils.success(resultList);
     }
 }

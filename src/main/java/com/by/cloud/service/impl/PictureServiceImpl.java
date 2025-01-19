@@ -10,6 +10,8 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.by.cloud.api.imagesearch.ImageSearchApiFacade;
+import com.by.cloud.api.imagesearch.model.ImageSearchResult;
 import com.by.cloud.common.BaseContext;
 import com.by.cloud.common.CosManager;
 import com.by.cloud.common.PageResult;
@@ -219,11 +221,14 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture> impl
         String introduction = pageDto.getIntroduction();
         String category = pageDto.getCategory();
         List<String> tagList = pageDto.getTagList();
+        String picFormat = pageDto.getPicFormat();
         String searchText = pageDto.getSearchText();
         Integer reviewStatus = pageDto.getReviewStatus();
         String reviewMessage = pageDto.getReviewMessage();
         Long spaceId = pageDto.getSpaceId();
         boolean nullSpaceId = pageDto.isNullSpaceId();
+        LocalDateTime startEditTime = pageDto.getStartEditTime();
+        LocalDateTime endEditTime = pageDto.getEndEditTime();
 
         // 校验参数
         ThrowUtils.throwIf(current <= 0 || pageSize <= 0, ErrorCode.PARAMS_ERROR);
@@ -239,6 +244,12 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture> impl
         queryWrapper.like(StrUtil.isNotBlank(reviewMessage), Picture::getReviewMessage, reviewMessage);
         queryWrapper.eq(spaceId != null, Picture::getSpaceId, spaceId);
         queryWrapper.isNull(nullSpaceId, Picture::getSpaceId);
+        queryWrapper.like(StrUtil.isNotBlank(picFormat), Picture::getPicFormat, picFormat);
+        // >= startEditTime
+        queryWrapper.ge(ObjectUtil.isNotEmpty(startEditTime), Picture::getEditTime, startEditTime);
+        // < endEditTime
+        queryWrapper.lt(ObjectUtil.isNotEmpty(endEditTime), Picture::getEditTime, endEditTime);
+        // order by createTime desc
         queryWrapper.orderByDesc(Picture::getCreateTime);
 
         // 标签查询
@@ -377,7 +388,7 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture> impl
         ThrowUtils.throwIf(dbPicture == null, ErrorCode.NOT_FOUND_ERROR);
 
         // 判断是否有权限，只有创建用户本人或管理员才能更改
-        this.checkPictureAuth(picture);
+        this.checkPictureAuth(dbPicture);
 
         // 填充审核参数
         this.fillReviewParams(picture, userService.getLoginUser());
@@ -608,12 +619,14 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture> impl
             ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR);
 
             // 更新空间额度
-            boolean update = spaceService.lambdaUpdate()
-                    .eq(Space::getId, picture.getSpaceId())
-                    .setSql("total_size = total_size - " + picture.getPicSize())
-                    .setSql("total_count = total_count - 1")
-                    .update();
-            ThrowUtils.throwIf(!update, ErrorCode.OPERATION_ERROR);
+            if (picture.getSpaceId() != null) {
+                boolean update = spaceService.lambdaUpdate()
+                        .eq(Space::getId, picture.getSpaceId())
+                        .setSql("total_size = total_size - " + picture.getPicSize())
+                        .setSql("total_count = total_count - 1")
+                        .update();
+                ThrowUtils.throwIf(!update, ErrorCode.OPERATION_ERROR);
+            }
         });
     }
 
@@ -654,6 +667,17 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture> impl
                 throw new BusinessException(ErrorCode.NO_AUTH_ERROR);
             }
         }
+    }
+
+    @Override
+    public List<ImageSearchResult> searchPictureByPicture(PictureSearchByPictureDto searchByPictureDto) {
+        // 校验参数
+        Long pictureId = searchByPictureDto.getPictureId();
+        ThrowUtils.throwIf(pictureId == null || pictureId <= 0, ErrorCode.PARAMS_ERROR);
+        Picture picture = this.getById(pictureId);
+        ThrowUtils.throwIf(picture == null, ErrorCode.NOT_FOUND_ERROR);
+        // 搜图
+        return ImageSearchApiFacade.searchImage(picture.getPicUrl());
     }
 
     /**

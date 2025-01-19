@@ -1,12 +1,15 @@
 package com.by.cloud.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.by.cloud.api.imagesearch.model.ImageSearchResult;
 import com.by.cloud.common.PageResult;
 import com.by.cloud.model.dto.picture.*;
 import com.by.cloud.model.entity.Picture;
 import com.by.cloud.model.vo.picture.PictureTagCategoryVo;
 import com.by.cloud.model.vo.picture.PictureVo;
 import com.by.cloud.model.vo.user.UserVo;
+
+import java.util.List;
 
 /**
  * @author lzh
@@ -120,4 +123,12 @@ public interface PictureService extends IService<Picture> {
      * @param picture 图片
      */
     void checkPictureAuth(Picture picture);
+
+    /**
+     * 以图搜图
+     *
+     * @param searchByPictureDto 请求参数
+     * @return 相似图片列表
+     */
+    List<ImageSearchResult> searchPictureByPicture(PictureSearchByPictureDto searchByPictureDto);
 }

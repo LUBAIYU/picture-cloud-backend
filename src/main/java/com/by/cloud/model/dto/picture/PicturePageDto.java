@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 
 import java.io.Serializable;
+import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -27,6 +28,9 @@ public class PicturePageDto extends PageRequest implements Serializable {
     @ApiModelProperty("标签列表")
     private List<String> tagList;
 
+    @ApiModelProperty("图片格式")
+    private String picFormat;
+
     @ApiModelProperty("搜索关键词")
     private String searchText;
 
@@ -41,4 +45,10 @@ public class PicturePageDto extends PageRequest implements Serializable {
 
     @ApiModelProperty("是否只查询 spaceId 为 null 的数据")
     private boolean nullSpaceId;
+
+    @ApiModelProperty("开始编辑时间")
+    private LocalDateTime startEditTime;
+
+    @ApiModelProperty("结束编辑时间")
+    private LocalDateTime endEditTime;
 }
