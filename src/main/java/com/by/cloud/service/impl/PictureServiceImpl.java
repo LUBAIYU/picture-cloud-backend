@@ -677,7 +677,10 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture> impl
         Picture picture = this.getById(pictureId);
         ThrowUtils.throwIf(picture == null, ErrorCode.NOT_FOUND_ERROR);
         // 搜图
-        return ImageSearchApiFacade.searchImage(picture.getPicUrl());
+        if (StrUtil.isBlank(picture.getRawUrl())) {
+            throw new BusinessException(ErrorCode.OPERATION_ERROR, "该格式图片暂时不支持搜图");
+        }
+        return ImageSearchApiFacade.searchImage(picture.getRawUrl());
     }
 
     /**

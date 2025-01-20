@@ -25,6 +25,9 @@ public class PictureVo implements Serializable {
     @ApiModelProperty("图片ID")
     private Long picId;
 
+    @ApiModelProperty("未转为 webp 格式的原始图片 url")
+    private String rawUrl;
+
     @ApiModelProperty("图片url")
     private String picUrl;
 

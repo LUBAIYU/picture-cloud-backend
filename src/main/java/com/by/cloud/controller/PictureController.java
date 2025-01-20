@@ -120,7 +120,6 @@ public class PictureController {
         return ResultUtils.success(pageResult);
     }
 
-    @Deprecated
     @ApiOperation("分页查询图片（封装类），多级缓存")
     @PostMapping("/cache/vo/page")
     public BaseResponse<PageResult<PictureVo>> queryPictureVoByPageWithCache(@RequestBody PicturePageDto pageDto) {
@@ -130,6 +129,8 @@ public class PictureController {
         ThrowUtils.throwIf(pageSize > 20, ErrorCode.PARAMS_ERROR);
         // 用户只能看到审核通过的图片
         pageDto.setReviewStatus(PictureReviewStatusEnum.PASS.getValue());
+        pageDto.setSpaceId(null);
+        pageDto.setNullSpaceId(true);
         PageResult<PictureVo> pageResult = pictureService.queryPictureVoByPageWithCache(pageDto);
         return ResultUtils.success(pageResult);
     }

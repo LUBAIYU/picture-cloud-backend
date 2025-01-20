@@ -58,7 +58,6 @@ public class TagController {
     }
 
     @ApiOperation("根据ID查询标签")
-    @PreAuthorize(role = UserRoleEnum.ADMIN)
     @GetMapping("/get/{id}")
     public BaseResponse<Tag> getTagById(@PathVariable Long id) {
         ThrowUtils.throwIf(id == null || id <= 0, ErrorCode.PARAMS_ERROR);
@@ -67,7 +66,6 @@ public class TagController {
     }
 
     @ApiOperation("查询标签列表")
-    @PreAuthorize(role = UserRoleEnum.ADMIN)
     @GetMapping("/list")
     public BaseResponse<List<TagListVo>> listTag() {
         List<TagListVo> tagListVos = tagService.listTag();

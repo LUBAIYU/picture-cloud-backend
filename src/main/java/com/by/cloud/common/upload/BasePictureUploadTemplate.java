@@ -76,7 +76,11 @@ public abstract class BasePictureUploadTemplate {
                     thumbnailImageInfo = objectList.get(1);
                 }
                 // 返回压缩后的图片信息
-                return buildResult(filename, compressedImageInfo, thumbnailImageInfo);
+                UploadPictureResult uploadPictureResult = buildResult(filename, compressedImageInfo, thumbnailImageInfo);
+                // 设置原图URL
+                String rawUrl = clientConfig.getHost() + uploadPath;
+                uploadPictureResult.setRawUrl(rawUrl);
+                return uploadPictureResult;
             }
             // 返回
             return buildResult(imageInfo, uploadPath, filename, tempFile);

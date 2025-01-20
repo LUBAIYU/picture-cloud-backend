@@ -58,7 +58,6 @@ public class CategoryController {
     }
 
     @ApiOperation("根据ID查询分类")
-    @PreAuthorize(role = UserRoleEnum.ADMIN)
     @GetMapping("/get/{id}")
     public BaseResponse<Category> getCategoryById(@PathVariable Long id) {
         ThrowUtils.throwIf(id == null || id <= 0, ErrorCode.PARAMS_ERROR);
@@ -67,7 +66,6 @@ public class CategoryController {
     }
 
     @ApiOperation("查询分类列表")
-    @PreAuthorize(role = UserRoleEnum.ADMIN)
     @GetMapping("/list")
     public BaseResponse<List<CategoryListVo>> listCategory() {
         List<CategoryListVo> categoryListVos = categoryService.listCategory();

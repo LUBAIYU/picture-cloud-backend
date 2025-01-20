@@ -26,6 +26,11 @@ public class Picture implements Serializable {
     private Long picId;
 
     /**
+     * 未转为 webp 格式的原始图片 url
+     */
+    private String rawUrl;
+
+    /**
      * 图片 url
      */
     private String picUrl;

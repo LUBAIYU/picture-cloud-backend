@@ -11,7 +11,10 @@ import java.io.Serializable;
 @Data
 public class UploadPictureResult implements Serializable {
 
-    @ApiModelProperty("图片url")
+    @ApiModelProperty("原图url")
+    private String rawUrl;
+
+    @ApiModelProperty("压缩图url")
     private String picUrl;
 
     @ApiModelProperty("缩略图url")
