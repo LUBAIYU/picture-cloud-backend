@@ -2,10 +2,15 @@ package com.by.cloud.service.impl;
 
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.StrUtil;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.by.cloud.common.PageResult;
 import com.by.cloud.enums.ErrorCode;
 import com.by.cloud.exception.BusinessException;
 import com.by.cloud.mapper.TagMapper;
+import com.by.cloud.model.dto.tag.TagPageDto;
 import com.by.cloud.model.dto.tag.TagUpdateDto;
 import com.by.cloud.model.entity.PictureCategoryTag;
 import com.by.cloud.model.entity.Tag;
@@ -113,6 +118,24 @@ public class TagServiceImpl extends ServiceImpl<TagMapper, Tag> implements TagSe
             tagListVos.add(tagListVo);
         }
         return tagListVos;
+    }
+
+    @Override
+    public PageResult<Tag> listTagByPage(TagPageDto pageDto) {
+        // 校验参数
+        int current = pageDto.getCurrent();
+        int pageSize = pageDto.getPageSize();
+        String name = pageDto.getName();
+        ThrowUtils.throwIf(current <= 0 || pageSize <= 0, ErrorCode.PARAMS_ERROR);
+        // 添加查询条件
+        IPage<Tag> page = new Page<>(current, pageSize);
+        LambdaQueryWrapper<Tag> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.like(StrUtil.isNotBlank(name), Tag::getName, name);
+        queryWrapper.orderByDesc(Tag::getCreateTime);
+        // 查询
+        this.page(page, queryWrapper);
+        // 封装参数返回
+        return PageResult.of(page.getTotal(), page.getRecords());
     }
 }
 

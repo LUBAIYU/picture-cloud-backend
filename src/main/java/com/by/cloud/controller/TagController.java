@@ -4,8 +4,10 @@ import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.collection.CollectionUtil;
 import com.by.cloud.aop.PreAuthorize;
 import com.by.cloud.common.BaseResponse;
+import com.by.cloud.common.PageResult;
 import com.by.cloud.enums.ErrorCode;
 import com.by.cloud.enums.UserRoleEnum;
+import com.by.cloud.model.dto.tag.TagPageDto;
 import com.by.cloud.model.dto.tag.TagUpdateDto;
 import com.by.cloud.model.entity.Tag;
 import com.by.cloud.model.vo.tag.TagListVo;
@@ -70,5 +72,14 @@ public class TagController {
     public BaseResponse<List<TagListVo>> listTag() {
         List<TagListVo> tagListVos = tagService.listTag();
         return ResultUtils.success(tagListVos);
+    }
+
+    @ApiOperation("分页查询标签")
+    @PreAuthorize(role = UserRoleEnum.ADMIN)
+    @PostMapping("/page")
+    public BaseResponse<PageResult<Tag>> listTagByPage(@RequestBody TagPageDto pageDto) {
+        ThrowUtils.throwIf(pageDto == null, ErrorCode.PARAMS_ERROR);
+        PageResult<Tag> pageResult = tagService.listTagByPage(pageDto);
+        return ResultUtils.success(pageResult);
     }
 }

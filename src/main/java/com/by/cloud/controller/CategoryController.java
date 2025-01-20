@@ -4,8 +4,10 @@ import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.collection.CollectionUtil;
 import com.by.cloud.aop.PreAuthorize;
 import com.by.cloud.common.BaseResponse;
+import com.by.cloud.common.PageResult;
 import com.by.cloud.enums.ErrorCode;
 import com.by.cloud.enums.UserRoleEnum;
+import com.by.cloud.model.dto.category.CategoryPageDto;
 import com.by.cloud.model.dto.category.CategoryUpdateDto;
 import com.by.cloud.model.entity.Category;
 import com.by.cloud.model.vo.category.CategoryListVo;
@@ -70,5 +72,14 @@ public class CategoryController {
     public BaseResponse<List<CategoryListVo>> listCategory() {
         List<CategoryListVo> categoryListVos = categoryService.listCategory();
         return ResultUtils.success(categoryListVos);
+    }
+
+    @ApiOperation("分页查询分类")
+    @PreAuthorize(role = UserRoleEnum.ADMIN)
+    @PostMapping("/page")
+    public BaseResponse<PageResult<Category>> listCategoryByPage(@RequestBody CategoryPageDto pageDto) {
+        ThrowUtils.throwIf(pageDto == null, ErrorCode.PARAMS_ERROR);
+        PageResult<Category> pageResult = categoryService.listCategoryByPage(pageDto);
+        return ResultUtils.success(pageResult);
     }
 }

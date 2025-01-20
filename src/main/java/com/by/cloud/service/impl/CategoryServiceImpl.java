@@ -2,10 +2,15 @@ package com.by.cloud.service.impl;
 
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.StrUtil;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.by.cloud.common.PageResult;
 import com.by.cloud.enums.ErrorCode;
 import com.by.cloud.exception.BusinessException;
 import com.by.cloud.mapper.CategoryMapper;
+import com.by.cloud.model.dto.category.CategoryPageDto;
 import com.by.cloud.model.dto.category.CategoryUpdateDto;
 import com.by.cloud.model.entity.Category;
 import com.by.cloud.model.entity.PictureCategoryTag;
@@ -74,6 +79,24 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category> i
             categoryListVos.add(categoryListVo);
         }
         return categoryListVos;
+    }
+
+    @Override
+    public PageResult<Category> listCategoryByPage(CategoryPageDto pageDto) {
+        // 校验参数
+        int current = pageDto.getCurrent();
+        int pageSize = pageDto.getPageSize();
+        String name = pageDto.getName();
+        ThrowUtils.throwIf(current <= 0 || pageSize <= 0, ErrorCode.PARAMS_ERROR);
+        // 添加查询条件
+        IPage<Category> page = new Page<>(current, pageSize);
+        LambdaQueryWrapper<Category> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.like(StrUtil.isNotBlank(name), Category::getName, name);
+        queryWrapper.orderByDesc(Category::getCreateTime);
+        // 查询
+        this.page(page, queryWrapper);
+        // 封装参数返回
+        return PageResult.of(page.getTotal(), page.getRecords());
     }
 
     @Override
