@@ -33,6 +33,7 @@ create table if not exists picture
     pic_height     int                                null comment '图片高度',
     pic_scale      double                             null comment '图片宽高比例',
     pic_format     varchar(32)                        null comment '图片格式',
+    pic_color      varchar(16)                        null comment '图片主色调',
     user_id        bigint                             not null comment '创建用户 id',
     space_id       bigint                             null comment '空间 id (为空表示公共空间)',
     review_status  int      default 0                 not null comment '审核状态：0-待审核；1-通过；2-拒绝',

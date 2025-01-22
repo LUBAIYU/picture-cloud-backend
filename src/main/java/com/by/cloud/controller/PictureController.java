@@ -169,10 +169,20 @@ public class PictureController {
     }
 
     @ApiOperation("以图搜图")
-    @PostMapping("/search")
+    @PostMapping("/search/byPicture")
     public BaseResponse<List<ImageSearchResult>> searchPictureByPicture(@RequestBody PictureSearchByPictureDto searchByPictureDto) {
         ThrowUtils.throwIf(searchByPictureDto == null, ErrorCode.PARAMS_ERROR);
         List<ImageSearchResult> resultList = pictureService.searchPictureByPicture(searchByPictureDto);
+        return ResultUtils.success(resultList);
+    }
+
+    @ApiOperation("根据颜色搜索图片")
+    @PostMapping("/search/byColor")
+    public BaseResponse<List<PictureVo>> searchPictureByColor(@RequestBody PictureSearchByColorDto searchByColorDto) {
+        ThrowUtils.throwIf(searchByColorDto == null, ErrorCode.PARAMS_ERROR);
+        Long spaceId = searchByColorDto.getSpaceId();
+        String picColor = searchByColorDto.getPicColor();
+        List<PictureVo> resultList = pictureService.searchPictureByColor(spaceId, picColor);
         return ResultUtils.success(resultList);
     }
 }

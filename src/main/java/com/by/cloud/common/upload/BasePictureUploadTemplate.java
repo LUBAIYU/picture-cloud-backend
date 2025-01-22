@@ -10,6 +10,7 @@ import com.by.cloud.config.CosClientConfig;
 import com.by.cloud.enums.ErrorCode;
 import com.by.cloud.exception.BusinessException;
 import com.by.cloud.model.dto.file.UploadPictureResult;
+import com.by.cloud.utils.ColorTransferUtils;
 import com.qcloud.cos.model.PutObjectResult;
 import com.qcloud.cos.model.ciModel.persistence.CIObject;
 import com.qcloud.cos.model.ciModel.persistence.ImageInfo;
@@ -76,7 +77,7 @@ public abstract class BasePictureUploadTemplate {
                     thumbnailImageInfo = objectList.get(1);
                 }
                 // 返回压缩后的图片信息
-                UploadPictureResult uploadPictureResult = buildResult(filename, compressedImageInfo, thumbnailImageInfo);
+                UploadPictureResult uploadPictureResult = buildResult(filename, imageInfo, compressedImageInfo, thumbnailImageInfo);
                 // 设置原图URL
                 String rawUrl = clientConfig.getHost() + uploadPath;
                 uploadPictureResult.setRawUrl(rawUrl);
@@ -166,11 +167,12 @@ public abstract class BasePictureUploadTemplate {
      * 封装返回结果
      *
      * @param filename            原始文件名
+     * @param imageInfo           原始图片信息
      * @param compressedImageInfo 压缩后的图片信息
      * @param thumbnailImageInfo  缩略图信息
      * @return 压缩结果
      */
-    private UploadPictureResult buildResult(String filename, CIObject compressedImageInfo, CIObject thumbnailImageInfo) {
+    private UploadPictureResult buildResult(String filename, ImageInfo imageInfo, CIObject compressedImageInfo, CIObject thumbnailImageInfo) {
         // 获取图片宽高、宽高比、图片地址
         int picWidth = compressedImageInfo.getWidth();
         int picHeight = compressedImageInfo.getHeight();
@@ -187,6 +189,7 @@ public abstract class BasePictureUploadTemplate {
         uploadPictureResult.setPicHeight(picHeight);
         uploadPictureResult.setPicScale(picScale);
         uploadPictureResult.setPicFormat(compressedImageInfo.getFormat());
+        uploadPictureResult.setPicColor(ColorTransferUtils.getStandardColor(imageInfo.getAve()));
         // 设置缩略图地址
         uploadPictureResult.setThumbnailUrl(clientConfig.getHost() + "/" + thumbnailImageInfo.getKey());
 

@@ -131,4 +131,13 @@ public interface PictureService extends IService<Picture> {
      * @return 相似图片列表
      */
     List<ImageSearchResult> searchPictureByPicture(PictureSearchByPictureDto searchByPictureDto);
+
+    /**
+     * 根据颜色搜索图片
+     *
+     * @param spaceId  空间ID
+     * @param hexColor 目标颜色（16进制）
+     * @return 图片列表
+     */
+    List<PictureVo> searchPictureByColor(Long spaceId, String hexColor);
 }

@@ -32,6 +32,7 @@ import com.by.cloud.model.vo.picture.PictureVo;
 import com.by.cloud.model.vo.tag.TagListVo;
 import com.by.cloud.model.vo.user.UserVo;
 import com.by.cloud.service.*;
+import com.by.cloud.utils.ColorSimilarUtils;
 import com.by.cloud.utils.ThrowUtils;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
@@ -50,9 +51,11 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.util.DigestUtils;
 
+import java.awt.*;
 import java.io.IOException;
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -681,6 +684,50 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture> impl
             throw new BusinessException(ErrorCode.OPERATION_ERROR, "该格式图片暂时不支持搜图");
         }
         return ImageSearchApiFacade.searchImage(picture.getRawUrl());
+    }
+
+    @Override
+    public List<PictureVo> searchPictureByColor(Long spaceId, String hexColor) {
+        // 校验参数
+        ThrowUtils.throwIf(spaceId == null || spaceId <= 0, ErrorCode.PARAMS_ERROR);
+        ThrowUtils.throwIf(StrUtil.isBlank(hexColor), ErrorCode.PARAMS_ERROR);
+
+        // 校验空间权限
+        Space space = spaceService.getById(spaceId);
+        ThrowUtils.throwIf(space == null, ErrorCode.NOT_FOUND_ERROR, "空间不存在");
+        Long loginUserId = BaseContext.getLoginUserId();
+        if (!loginUserId.equals(space.getUserId())) {
+            throw new BusinessException(ErrorCode.NO_AUTH_ERROR, "无该空间访问权限");
+        }
+
+        // 查询该空间下有主色调的图片
+        List<Picture> pictureList = this.lambdaQuery()
+                .eq(Picture::getSpaceId, spaceId)
+                .isNotNull(Picture::getPicColor)
+                .list();
+        if (CollUtil.isEmpty(pictureList)) {
+            return Collections.emptyList();
+        }
+
+        // 计算相似度并排序
+        Color targetColor = Color.decode(hexColor);
+        List<Picture> sortedPictureList = pictureList.stream()
+                .sorted(Comparator.comparingDouble(picture -> {
+                    // 获取图片主色调
+                    String hexPicColor = picture.getPicColor();
+                    if (StrUtil.isBlank(hexPicColor)) {
+                        return Double.MAX_VALUE;
+                    }
+                    Color picColor = Color.decode(hexPicColor);
+                    // 越大越相似，由于默认从小到大排序，取反则逆序
+                    return -ColorSimilarUtils.calculateSimilarity(targetColor, picColor);
+                }))
+                // 取前12个
+                .limit(12)
+                .toList();
+
+        // 返回结果
+        return sortedPictureList.stream().map(PictureVo::objToVo).toList();
     }
 
     /**

@@ -37,4 +37,7 @@ public class UploadPictureResult implements Serializable {
 
     @ApiModelProperty("图片格式")
     private String picFormat;
+
+    @ApiModelProperty("图片主色调")
+    private String picColor;
 }
