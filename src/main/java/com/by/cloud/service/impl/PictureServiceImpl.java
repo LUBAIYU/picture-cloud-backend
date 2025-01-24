@@ -207,6 +207,35 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture> impl
         }
         // 获取封装类
         PictureVo pictureVo = PictureVo.objToVo(picture);
+
+        // 设置分类
+        Long categoryId = pictureVo.getCategoryId();
+        if (categoryId != null) {
+            Category category = categoryService.lambdaQuery()
+                    .eq(Category::getId, categoryId)
+                    .one();
+            if (category != null) {
+                pictureVo.setCategory(category.getName());
+            }
+        }
+
+        // 设置标签列表
+        // 获取图片标签关联数据
+        List<PictureTag> pictureTagList = pictureTagService.lambdaQuery()
+                .eq(PictureTag::getPictureId, picId)
+                .list();
+        if (CollUtil.isNotEmpty(pictureTagList)) {
+            List<Long> tagIdList = pictureTagList.stream().map(PictureTag::getTagId).toList();
+            // 获取标签列表
+            List<String> tagList = tagService.lambdaQuery()
+                    .in(Tag::getId, tagIdList)
+                    .list()
+                    .stream()
+                    .map(Tag::getName)
+                    .toList();
+            pictureVo.setTagList(tagList);
+        }
+
         // 设置图片的创建用户信息
         Long userId = picture.getUserId();
         User user = userService.getById(userId);
@@ -724,11 +753,6 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture> impl
         ThrowUtils.throwIf(spaceId == null || spaceId <= 0, ErrorCode.PARAMS_ERROR);
         ThrowUtils.throwIf(CollUtil.isEmpty(pictureIdList), ErrorCode.PARAMS_ERROR);
 
-        // 如果分类和标签都不传，直接返回
-        if (categoryId == null && CollUtil.isEmpty(tagIdList)) {
-            return;
-        }
-
         // 校验空间权限
         Space space = spaceService.getById(spaceId);
         ThrowUtils.throwIf(space == null, ErrorCode.NOT_FOUND_ERROR);
@@ -778,11 +802,38 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture> impl
                 }
                 pictureTagService.saveBatch(pictureTagList);
             }
+
+            // 批量重命名
+            String nameRule = editByBatchDto.getNameRule();
+            fillPictureWithNameRule(pictureList, nameRule);
+
             // 批量更新
             PictureService proxyService = (PictureService) AopContext.currentProxy();
             boolean updated = proxyService.updateBatchById(pictureList);
             ThrowUtils.throwIf(!updated, ErrorCode.OPERATION_ERROR);
         });
+    }
+
+    /**
+     * 批量重命名
+     *
+     * @param pictureList 图片列表
+     * @param nameRule    命名规则 如：图片{序号}
+     */
+    private void fillPictureWithNameRule(List<Picture> pictureList, String nameRule) {
+        if (CollUtil.isEmpty(pictureList) || StrUtil.isBlank(nameRule)) {
+            return;
+        }
+        long count = 1;
+        try {
+            for (Picture picture : pictureList) {
+                String pictureName = nameRule.replaceAll("\\{序号}", String.valueOf(count++));
+                picture.setPicName(pictureName);
+            }
+        } catch (Exception e) {
+            log.error("名称解析错误", e);
+            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "名称解析错误");
+        }
     }
 
     /**

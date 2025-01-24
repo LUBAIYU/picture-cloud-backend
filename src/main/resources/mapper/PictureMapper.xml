@@ -51,6 +51,7 @@
         left join category c
         on p.category_id = c.id
         <where>
+            p.is_delete = 0
             <if test="dto.picName != null and dto.picName != ''">
                 p.pic_name like concat('%',#{dto.picName},'%')
             </if>
@@ -75,11 +76,8 @@
             <if test="dto.picFormat != null and dto.picFormat != ''">
                 and p.pic_format like concat('%',#{dto.picFormat},'%')
             </if>
-            <if test="dto.startEditTime != null">
-                and p.edit_time ge #{dto.startEditTime}
-            </if>
-            <if test="dto.endEditTime != null">
-                and p.edit_time lt #{dto.endEditTime}
+            <if test="dto.startEditTime != null and dto.endEditTime != null">
+                and p.edit_time between #{dto.startEditTime} and #{dto.endEditTime}
             </if>
             <!-- 标签查询 -->
             <if test="dto.tagList != null and dto.tagList.size() > 0">

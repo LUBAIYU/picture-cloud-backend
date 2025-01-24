@@ -25,4 +25,7 @@ public class PictureEditByBatchDto implements Serializable {
 
     @ApiModelProperty("标签ID列表")
     private List<Long> tagIdList;
+
+    @ApiModelProperty("命名规则")
+    private String nameRule;
 }
