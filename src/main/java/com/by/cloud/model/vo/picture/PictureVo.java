@@ -1,7 +1,6 @@
 package com.by.cloud.model.vo.picture;
 
 import cn.hutool.core.bean.BeanUtil;
-import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.by.cloud.model.entity.Picture;
 import com.by.cloud.model.vo.user.UserVo;
@@ -37,11 +36,11 @@ public class PictureVo implements Serializable {
     @ApiModelProperty("图片名称")
     private String picName;
 
-    @ApiModelProperty("简介")
-    private String introduction;
-
     @ApiModelProperty("分类")
     private String category;
+
+    @ApiModelProperty("简介")
+    private String introduction;
 
     @ApiModelProperty("标签（列表）")
     private List<String> tagList;
@@ -64,6 +63,9 @@ public class PictureVo implements Serializable {
     @ApiModelProperty("图片主色调")
     private String picColor;
 
+    @ApiModelProperty("分类id")
+    private Long categoryId;
+
     @ApiModelProperty("创建用户ID")
     private Long userId;
 
@@ -72,6 +74,19 @@ public class PictureVo implements Serializable {
 
     @ApiModelProperty("创建用户")
     private UserVo userVo;
+
+    @ApiModelProperty("核状态：0-待审核；1-通过；2-拒绝")
+    private Integer reviewStatus;
+
+    @ApiModelProperty("审核信息")
+    private String reviewMessage;
+
+    @ApiModelProperty("审核人ID")
+    private Long reviewerId;
+
+    @ApiModelProperty("审核时间")
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    private LocalDateTime reviewTime;
 
     @ApiModelProperty("创建时间")
     @JsonFormat(pattern = "YYYY-MM-dd HH:mm:ss")
@@ -95,8 +110,6 @@ public class PictureVo implements Serializable {
         }
         Picture picture = new Picture();
         BeanUtil.copyProperties(pictureVo, picture);
-        // 类型不同进行转换
-        picture.setTags(JSONUtil.toJsonStr(pictureVo.getTagList()));
         return picture;
     }
 
@@ -106,8 +119,6 @@ public class PictureVo implements Serializable {
         }
         PictureVo pictureVo = new PictureVo();
         BeanUtil.copyProperties(picture, pictureVo);
-        // 类型不同进行转换
-        pictureVo.setTagList(JSONUtil.toList(picture.getTags(), String.class));
         return pictureVo;
     }
 }

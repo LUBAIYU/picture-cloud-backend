@@ -26,14 +26,13 @@ create table if not exists picture
     thumbnail_url  varchar(512)                       null comment '缩略图 url',
     pic_name       varchar(128)                       not null comment '图片名称',
     introduction   varchar(512)                       null comment '简介',
-    category       varchar(64)                        null comment '分类',
-    tags           varchar(512)                       null comment '标签（JSON 数组）',
     pic_size       bigint                             null comment '图片体积',
     pic_width      int                                null comment '图片宽度',
     pic_height     int                                null comment '图片高度',
     pic_scale      double                             null comment '图片宽高比例',
     pic_format     varchar(32)                        null comment '图片格式',
     pic_color      varchar(16)                        null comment '图片主色调',
+    category_id    bigint                             null comment '分类 id',
     user_id        bigint                             not null comment '创建用户 id',
     space_id       bigint                             null comment '空间 id (为空表示公共空间)',
     review_status  int      default 0                 not null comment '审核状态：0-待审核；1-通过；2-拒绝',
@@ -46,8 +45,7 @@ create table if not exists picture
     is_delete      tinyint  default 0                 not null comment '是否删除',
     INDEX idx_name (pic_name),               -- 提升基于图片名称的查询性能
     INDEX idx_introduction (introduction),   -- 用于模糊搜索图片简介
-    INDEX idx_category (category),           -- 提升基于分类的查询性能
-    INDEX idx_tags (tags),                   -- 提升基于标签的查询性能
+    INDEX idx_category_id (category_id),     -- 提升基于分类 ID 的查询性能
     INDEX idx_user_id (user_id),             -- 提升基于用户 ID 的查询性能
     INDEX idx_review_status (review_status), -- 提升基于审核状态的查询性能
     INDEX idx_space_id (space_id)            -- 提升基于空间 ID 的查询性能
@@ -76,14 +74,13 @@ create table if not exists tag
     UNIQUE KEY uk_name (name) -- 唯一索引，防止名称重复
 ) comment '标签表' collate = utf8mb4_unicode_ci;
 
--- 图片分类标签关联表
-create table if not exists picture_category_tag
+-- 图片标签关联表
+create table if not exists picture_tag
 (
-    id          bigint auto_increment comment '主键ID' primary key,
-    picture_id  bigint not null comment '图片ID',
-    category_id bigint not null comment '分类ID',
-    tag_id      bigint not null comment '标签ID'
-) comment '图片分类标签关联表' collate = utf8mb4_unicode_ci;
+    id         bigint auto_increment comment '主键ID' primary key,
+    picture_id bigint not null comment '图片ID',
+    tag_id     bigint not null comment '标签ID'
+) comment '图片标签关联表' collate = utf8mb4_unicode_ci;
 
 -- 空间表
 create table if not exists space

@@ -88,9 +88,9 @@ public class PictureController {
     @ApiOperation("分页查询图片（仅管理员）")
     @PreAuthorize(role = UserRoleEnum.ADMIN)
     @PostMapping("/page")
-    public BaseResponse<PageResult<Picture>> queryPictureByPage(@RequestBody PicturePageDto pageDto) {
+    public BaseResponse<PageResult<PictureVo>> queryPictureByPage(@RequestBody PicturePageDto pageDto) {
         ThrowUtils.throwIf(pageDto == null, ErrorCode.PARAMS_ERROR);
-        PageResult<Picture> pageResult = pictureService.queryPictureByPage(pageDto);
+        PageResult<PictureVo> pageResult = pictureService.queryPictureVoByPage(pageDto);
         return ResultUtils.success(pageResult);
     }
 
@@ -184,5 +184,13 @@ public class PictureController {
         String picColor = searchByColorDto.getPicColor();
         List<PictureVo> resultList = pictureService.searchPictureByColor(spaceId, picColor);
         return ResultUtils.success(resultList);
+    }
+
+    @ApiOperation("批量更新图片信息")
+    @PutMapping("/edit/byBatch")
+    public BaseResponse<Boolean> editPictureByBatch(@RequestBody PictureEditByBatchDto pictureEditByBatchDto) {
+        ThrowUtils.throwIf(pictureEditByBatchDto == null, ErrorCode.PARAMS_ERROR);
+        pictureService.editPictureByBatch(pictureEditByBatchDto);
+        return ResultUtils.success(true);
     }
 }

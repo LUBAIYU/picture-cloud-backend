@@ -11,7 +11,6 @@
         <result property="thumbnailUrl" column="thumbnail_url" jdbcType="VARCHAR"/>
         <result property="picName" column="pic_name" jdbcType="VARCHAR"/>
         <result property="introduction" column="introduction" jdbcType="VARCHAR"/>
-        <result property="category" column="category" jdbcType="VARCHAR"/>
         <result property="tags" column="tags" jdbcType="VARCHAR"/>
         <result property="picSize" column="pic_size" jdbcType="BIGINT"/>
         <result property="picWidth" column="pic_width" jdbcType="INTEGER"/>
@@ -19,6 +18,7 @@
         <result property="picScale" column="pic_scale" jdbcType="DOUBLE"/>
         <result property="picFormat" column="pic_format" jdbcType="VARCHAR"/>
         <result property="picColor" column="pic_color" jdbcType="VARCHAR"/>
+        <result property="categoryId" column="category_id" jdbcType="BIGINT"/>
         <result property="userId" column="user_id" jdbcType="BIGINT"/>
         <result property="spaceId" column="space_id" jdbcType="BIGINT"/>
         <result property="reviewStatus" column="review_status" jdbcType="INTEGER"/>
@@ -33,11 +33,68 @@
 
     <sql id="Base_Column_List">
         pic_id,raw_url,pic_url,thumbnail_url,pic_name,
-        introduction,category,tags,
+        introduction,tags,
         pic_size,pic_width,pic_height,
-        pic_scale,pic_format,pic_color,user_id,space_id,
+        pic_scale,pic_format,pic_color,category_id,user_id,space_id,
         review_status,review_message,reviewer_id,
         review_time,create_time,edit_time,
         update_time,is_delete
     </sql>
+
+    <select id="queryPictureByPage" resultType="com.by.cloud.model.entity.Picture">
+        select distinct p.*
+        from picture p
+        left join picture_tag pt
+        on p.pic_id = pt.picture_id
+        left join tag t
+        on pt.tag_id = t.id
+        left join category c
+        on p.category_id = c.id
+        <where>
+            <if test="dto.picName != null and dto.picName != ''">
+                p.pic_name like concat('%',#{dto.picName},'%')
+            </if>
+            <if test="dto.introduction != null and dto.introduction != ''">
+                and p.introduction like concat('%',#{dto.introduction},'%')
+            </if>
+            <if test="dto.category != null and dto.category != ''">
+                and c.name = #{dto.category}
+            </if>
+            <if test="dto.reviewStatus != null">
+                and p.review_status = #{dto.reviewStatus}
+            </if>
+            <if test="dto.reviewMessage != null and dto.reviewMessage != ''">
+                and p.review_message like concat('%',#{dto.reviewMessage},'%')
+            </if>
+            <if test="dto.spaceId != null">
+                and p.space_id = #{dto.spaceId}
+            </if>
+            <if test="dto.nullSpaceId == true">
+                and p.space_id is null
+            </if>
+            <if test="dto.picFormat != null and dto.picFormat != ''">
+                and p.pic_format like concat('%',#{dto.picFormat},'%')
+            </if>
+            <if test="dto.startEditTime != null">
+                and p.edit_time ge #{dto.startEditTime}
+            </if>
+            <if test="dto.endEditTime != null">
+                and p.edit_time lt #{dto.endEditTime}
+            </if>
+            <!-- 标签查询 -->
+            <if test="dto.tagList != null and dto.tagList.size() > 0">
+                <foreach collection="dto.tagList" item="tag" separator=" or " open="and (" close=")">
+                    t.name like concat ('%',#{tag},'%')
+                </foreach>
+            </if>
+            <!-- 关键词查询 -->
+            <if test="dto.searchText != null and dto.searchText!=''">
+                and (
+                p.pic_name like concat('%',#{dto.searchText},'%')
+                or p.introduction like concat('%',#{dto.searchText},'%')
+                )
+            </if>
+        </where>
+        order by p.create_time desc
+    </select>
 </mapper>

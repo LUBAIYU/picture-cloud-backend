@@ -140,4 +140,11 @@ public interface PictureService extends IService<Picture> {
      * @return 图片列表
      */
     List<PictureVo> searchPictureByColor(Long spaceId, String hexColor);
+
+    /**
+     * 批量修改图片信息
+     *
+     * @param editByBatchDto 请求体
+     */
+    void editPictureByBatch(PictureEditByBatchDto editByBatchDto);
 }

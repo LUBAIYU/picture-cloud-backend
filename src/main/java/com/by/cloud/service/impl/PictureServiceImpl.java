@@ -6,7 +6,6 @@ import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.RandomUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONUtil;
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -74,10 +73,11 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture> impl
     private final StringRedisTemplate stringRedisTemplate;
     private final CategoryService categoryService;
     private final TagService tagService;
-    private final PictureCategoryTagService pictureCategoryTagService;
+    private final PictureTagService pictureTagService;
     private final CosManager cosManager;
     private final SpaceService spaceService;
     private final TransactionTemplate transactionTemplate;
+    private final PictureMapper pictureMapper;
 
     /**
      * 本地缓存
@@ -217,63 +217,16 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture> impl
 
     @Override
     public PageResult<Picture> queryPictureByPage(PicturePageDto pageDto) {
-        // 获取参数
+        // 校验参数
         int current = pageDto.getCurrent();
         int pageSize = pageDto.getPageSize();
-        String picName = pageDto.getPicName();
-        String introduction = pageDto.getIntroduction();
-        String category = pageDto.getCategory();
-        List<String> tagList = pageDto.getTagList();
-        String picFormat = pageDto.getPicFormat();
-        String searchText = pageDto.getSearchText();
-        Integer reviewStatus = pageDto.getReviewStatus();
-        String reviewMessage = pageDto.getReviewMessage();
-        Long spaceId = pageDto.getSpaceId();
-        boolean nullSpaceId = pageDto.isNullSpaceId();
-        LocalDateTime startEditTime = pageDto.getStartEditTime();
-        LocalDateTime endEditTime = pageDto.getEndEditTime();
-
-        // 校验参数
         ThrowUtils.throwIf(current <= 0 || pageSize <= 0, ErrorCode.PARAMS_ERROR);
-
-        // 构建分页条件
-        IPage<Picture> page = new Page<>(current, pageSize);
-        // 构建查询条件
-        LambdaQueryWrapper<Picture> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.like(StrUtil.isNotBlank(picName), Picture::getPicName, picName);
-        queryWrapper.like(StrUtil.isNotBlank(introduction), Picture::getIntroduction, introduction);
-        queryWrapper.eq(StrUtil.isNotBlank(category), Picture::getCategory, category);
-        queryWrapper.eq(reviewStatus != null, Picture::getReviewStatus, reviewStatus);
-        queryWrapper.like(StrUtil.isNotBlank(reviewMessage), Picture::getReviewMessage, reviewMessage);
-        queryWrapper.eq(spaceId != null, Picture::getSpaceId, spaceId);
-        queryWrapper.isNull(nullSpaceId, Picture::getSpaceId);
-        queryWrapper.like(StrUtil.isNotBlank(picFormat), Picture::getPicFormat, picFormat);
-        // >= startEditTime
-        queryWrapper.ge(ObjectUtil.isNotEmpty(startEditTime), Picture::getEditTime, startEditTime);
-        // < endEditTime
-        queryWrapper.lt(ObjectUtil.isNotEmpty(endEditTime), Picture::getEditTime, endEditTime);
-        // order by createTime desc
-        queryWrapper.orderByDesc(Picture::getCreateTime);
-
-        // 标签查询
-        if (CollUtil.isNotEmpty(tagList)) {
-            for (String tag : tagList) {
-                queryWrapper.like(Picture::getTags, "\"" + tag + "\"");
-            }
-        }
-        if (StrUtil.isNotBlank(searchText)) {
-            // 搜索关键词同时匹配名称和简介
-            queryWrapper.and(qw -> qw.like(Picture::getPicName, searchText)
-                    .or()
-                    .like(Picture::getIntroduction, searchText)
-            );
-        }
-
+        // 构建分页对象
+        IPage<Picture> pageParams = new Page<>(current, pageSize);
         // 查询
-        this.page(page, queryWrapper);
-
+        IPage<Picture> pageRes = pictureMapper.queryPictureByPage(pageParams, pageDto);
         // 返回
-        return PageResult.of(page.getTotal(), page.getRecords());
+        return PageResult.of(pageRes.getTotal(), pageRes.getRecords());
     }
 
     @Override
@@ -290,6 +243,20 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture> impl
         // 对象列表 => VO列表
         List<PictureVo> pictureVoList = records.stream().map(PictureVo::objToVo).toList();
 
+        // 关联查询分类
+        // 获取去重的分类ID列表
+        Set<Long> categoryIdSet = records.stream().
+                map(Picture::getCategoryId).collect(Collectors.toSet());
+        // 查询分类ID列表对应的分类信息
+        Map<Long, List<Category>> categoryIdCategoryListMap;
+        if (CollUtil.isNotEmpty(categoryIdSet)) {
+            categoryIdCategoryListMap = categoryService.listByIds(categoryIdSet)
+                    .stream()
+                    .collect(Collectors.groupingBy(Category::getId));
+        } else {
+            categoryIdCategoryListMap = null;
+        }
+
         // 关联查询用户信息
         // 获取去重的用户ID列表
         Set<Long> userIdSet = records.stream().map(Picture::getUserId).collect(Collectors.toSet());
@@ -298,14 +265,58 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture> impl
                 .stream()
                 .collect(Collectors.groupingBy(User::getUserId));
 
-        // 设置用户信息
+        // 设置分类和用户信息
         pictureVoList.forEach(pictureVo -> {
+            Long categoryId = pictureVo.getCategoryId();
             Long userId = pictureVo.getUserId();
+            if (categoryIdCategoryListMap != null && categoryIdCategoryListMap.containsKey(categoryId)) {
+                Category category = categoryIdCategoryListMap.get(categoryId).get(0);
+                pictureVo.setCategory(category.getName());
+            }
             if (userIdUserListMap.containsKey(userId)) {
                 User user = userIdUserListMap.get(userId).get(0);
                 pictureVo.setUserVo(BeanUtil.copyProperties(user, UserVo.class));
             }
         });
+
+        // 定义一个Map用于存储每个图片对应的标签列表
+        Map<Long, List<String>> pictureIdTagListMap = new HashMap<>(records.size());
+
+        // 关联查询标签信息
+        List<Long> pictureIdList = records.stream().map(Picture::getPicId).toList();
+        List<PictureTag> pictureTagList = pictureTagService.lambdaQuery()
+                .in(PictureTag::getPictureId, pictureIdList)
+                .list();
+        // 无关联标签直接返回
+        if (CollUtil.isEmpty(pictureTagList)) {
+            return PageResult.of(pageResult.getTotal(), pictureVoList);
+        }
+        // 获取图片ID对应的标签列表
+        Map<Long, List<PictureTag>> pictureIdPictureTagListMap = pictureTagList.stream()
+                .collect(Collectors.groupingBy(PictureTag::getPictureId));
+        pictureIdPictureTagListMap.keySet().forEach(pictureId -> {
+            // 获取每个图片ID对应的标签ID列表
+            List<Long> tagIdList = pictureIdPictureTagListMap.get(pictureId)
+                    .stream()
+                    .map(PictureTag::getTagId)
+                    .toList();
+            // 批量查询标签信息
+            List<String> tagList = tagService.lambdaQuery()
+                    .in(Tag::getId, tagIdList)
+                    .list()
+                    .stream().map(Tag::getName)
+                    .toList();
+            // 存入Map
+            pictureIdTagListMap.put(pictureId, tagList);
+        });
+
+        // 设置标签信息
+        for (PictureVo pictureVo : pictureVoList) {
+            Long picId = pictureVo.getPicId();
+            if (pictureIdTagListMap.containsKey(picId)) {
+                pictureVo.setTagList(pictureIdTagListMap.get(picId));
+            }
+        }
 
         // 封装返回
         return PageResult.of(pageResult.getTotal(), pictureVoList);
@@ -326,61 +337,34 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture> impl
         }
         this.validIdList(tagIdList);
 
-        // 先删除图片原有的绑定关系
-        pictureCategoryTagService.lambdaUpdate()
-                .eq(PictureCategoryTag::getPictureId, picId)
-                .remove();
-
-        // 如果只传递了标签，但是没有传分类，则报错，此业务默认标签属于分类下的一个层级
-        if (categoryId == null && CollUtil.isNotEmpty(tagIdList)) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR, "需先指定分类，再选标签");
-        }
-
-        // 保存新的绑定关系
-        if (categoryId != null) {
-            List<PictureCategoryTag> pictureCategoryTagList = new ArrayList<>();
-            if (CollUtil.isNotEmpty(tagIdList)) {
-                for (Long tagId : tagIdList) {
-                    PictureCategoryTag pictureCategoryTag = new PictureCategoryTag();
-                    pictureCategoryTag.setPictureId(picId);
-                    pictureCategoryTag.setCategoryId(categoryId);
-                    pictureCategoryTag.setTagId(tagId);
-                    pictureCategoryTagList.add(pictureCategoryTag);
-                }
-            } else {
-                PictureCategoryTag pictureCategoryTag = new PictureCategoryTag();
-                pictureCategoryTag.setPictureId(picId);
-                pictureCategoryTag.setCategoryId(categoryId);
-                pictureCategoryTagList.add(pictureCategoryTag);
-            }
-            // 插入数据库
-            boolean saved = pictureCategoryTagService.saveBatch(pictureCategoryTagList);
-            ThrowUtils.throwIf(!saved, ErrorCode.OPERATION_ERROR);
-        }
-
         // 复制参数
         Picture picture = new Picture();
         BeanUtil.copyProperties(updateDto, picture);
 
-        // 如果有传分类，则冗余分类名称
-        if (categoryId != null) {
-            Category category = categoryService.lambdaQuery()
-                    .eq(Category::getId, categoryId)
-                    .one();
-            ThrowUtils.throwIf(category == null, ErrorCode.NOT_FOUND_ERROR);
-            picture.setCategory(category.getName());
-        }
-
-        // 如果有传标签，则冗余标签列表
+        // 如果有传标签，则更新标签信息及关联
         if (CollUtil.isNotEmpty(tagIdList)) {
-            List<Tag> tagList = tagService.lambdaQuery()
-                    .in(Tag::getId, tagIdList)
-                    .list();
-            if (CollUtil.isEmpty(tagList) || tagList.size() != tagIdList.size()) {
-                throw new BusinessException(ErrorCode.NOT_FOUND_ERROR);
-            }
-            List<String> tagNameList = tagList.stream().map(Tag::getName).toList();
-            picture.setTags(JSONUtil.toJsonStr(tagNameList));
+            // 开启事务
+            transactionTemplate.executeWithoutResult(transactionStatus -> {
+                // 查询是否有关联
+                boolean exists = pictureTagService.lambdaQuery()
+                        .eq(PictureTag::getPictureId, picId)
+                        .exists();
+                if (exists) {
+                    // 删除关联
+                    pictureTagService.lambdaUpdate()
+                            .eq(PictureTag::getPictureId, picId)
+                            .remove();
+                }
+                // 插入新的关联数据
+                List<PictureTag> pictureTagList = new ArrayList<>();
+                for (Long tagId : tagIdList) {
+                    PictureTag pictureTag = new PictureTag();
+                    pictureTag.setPictureId(picId);
+                    pictureTag.setTagId(tagId);
+                    pictureTagList.add(pictureTag);
+                }
+                pictureTagService.saveBatch(pictureTagList);
+            });
         }
 
         // 校验
@@ -607,9 +591,9 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture> impl
         // 只有创建用户或者管理员可以删除图片
         this.checkPictureAuth(picture);
 
-        // 删除图片与分类标签的绑定关系
-        pictureCategoryTagService.lambdaUpdate()
-                .eq(PictureCategoryTag::getPictureId, picId)
+        // 删除图片与标签的绑定关系
+        pictureTagService.lambdaUpdate()
+                .eq(PictureTag::getPictureId, picId)
                 .remove();
 
         // 删除远程COS图片
@@ -728,6 +712,77 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture> impl
 
         // 返回结果
         return sortedPictureList.stream().map(PictureVo::objToVo).toList();
+    }
+
+    @Override
+    public void editPictureByBatch(PictureEditByBatchDto editByBatchDto) {
+        // 校验参数
+        List<Long> pictureIdList = editByBatchDto.getPictureIdList();
+        Long spaceId = editByBatchDto.getSpaceId();
+        Long categoryId = editByBatchDto.getCategoryId();
+        List<Long> tagIdList = editByBatchDto.getTagIdList();
+        ThrowUtils.throwIf(spaceId == null || spaceId <= 0, ErrorCode.PARAMS_ERROR);
+        ThrowUtils.throwIf(CollUtil.isEmpty(pictureIdList), ErrorCode.PARAMS_ERROR);
+
+        // 如果分类和标签都不传，直接返回
+        if (categoryId == null && CollUtil.isEmpty(tagIdList)) {
+            return;
+        }
+
+        // 校验空间权限
+        Space space = spaceService.getById(spaceId);
+        ThrowUtils.throwIf(space == null, ErrorCode.NOT_FOUND_ERROR);
+        Long loginUserId = BaseContext.getLoginUserId();
+        if (!loginUserId.equals(space.getUserId())) {
+            throw new BusinessException(ErrorCode.NO_AUTH_ERROR, "无该空间访问权限");
+        }
+
+        // 查询该空间下的指定图片
+        List<Picture> pictureList = this.lambdaQuery()
+                .select(Picture::getPicId, Picture::getSpaceId)
+                .eq(Picture::getSpaceId, spaceId)
+                .in(Picture::getPicId, pictureIdList)
+                .list();
+        if (CollUtil.isEmpty(pictureList)) {
+            return;
+        }
+
+        // 开启事务
+        transactionTemplate.executeWithoutResult(transactionStatus -> {
+            // 设置分类
+            for (Picture picture : pictureList) {
+                if (categoryId != null) {
+                    picture.setCategoryId(categoryId);
+                }
+            }
+            if (CollUtil.isNotEmpty(tagIdList)) {
+                // 查询是否有图片标签关联表数据
+                boolean exists = pictureTagService.lambdaQuery()
+                        .in(PictureTag::getPictureId, pictureIdList)
+                        .exists();
+                if (exists) {
+                    // 删除图片标签关联表数据
+                    pictureTagService.lambdaUpdate()
+                            .in(PictureTag::getPictureId, pictureIdList)
+                            .remove();
+                }
+                // 插入新的关联数据
+                List<PictureTag> pictureTagList = new ArrayList<>();
+                for (Long pictureId : pictureIdList) {
+                    for (Long tagId : tagIdList) {
+                        PictureTag pictureTag = new PictureTag();
+                        pictureTag.setPictureId(pictureId);
+                        pictureTag.setTagId(tagId);
+                        pictureTagList.add(pictureTag);
+                    }
+                }
+                pictureTagService.saveBatch(pictureTagList);
+            }
+            // 批量更新
+            PictureService proxyService = (PictureService) AopContext.currentProxy();
+            boolean updated = proxyService.updateBatchById(pictureList);
+            ThrowUtils.throwIf(!updated, ErrorCode.OPERATION_ERROR);
+        });
     }
 
     /**

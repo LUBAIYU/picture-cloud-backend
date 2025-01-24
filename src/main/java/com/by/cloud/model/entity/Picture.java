@@ -51,16 +51,6 @@ public class Picture implements Serializable {
     private String introduction;
 
     /**
-     * 分类
-     */
-    private String category;
-
-    /**
-     * 标签（JSON 数组）
-     */
-    private String tags;
-
-    /**
      * 图片体积
      */
     private Long picSize;
@@ -89,6 +79,11 @@ public class Picture implements Serializable {
      * 图片主色调
      */
     private String picColor;
+
+    /**
+     * 分类 id
+     */
+    private Long categoryId;
 
     /**
      * 创建用户 id

@@ -12,10 +12,10 @@ import com.by.cloud.exception.BusinessException;
 import com.by.cloud.mapper.TagMapper;
 import com.by.cloud.model.dto.tag.TagPageDto;
 import com.by.cloud.model.dto.tag.TagUpdateDto;
-import com.by.cloud.model.entity.PictureCategoryTag;
+import com.by.cloud.model.entity.PictureTag;
 import com.by.cloud.model.entity.Tag;
 import com.by.cloud.model.vo.tag.TagListVo;
-import com.by.cloud.service.PictureCategoryTagService;
+import com.by.cloud.service.PictureTagService;
 import com.by.cloud.service.TagService;
 import com.by.cloud.utils.ThrowUtils;
 import org.springframework.aop.framework.AopContext;
@@ -33,7 +33,7 @@ import java.util.List;
 public class TagServiceImpl extends ServiceImpl<TagMapper, Tag> implements TagService {
 
     @Resource
-    private PictureCategoryTagService pictureCategoryTagService;
+    private PictureTagService pictureTagService;
 
     @Override
     public void addBatchTags(List<String> tagNameList) {
@@ -64,8 +64,8 @@ public class TagServiceImpl extends ServiceImpl<TagMapper, Tag> implements TagSe
     @Override
     public void delBatchTag(List<Long> ids) {
         // 判断删除的分类是否有使用中
-        Long count = pictureCategoryTagService.lambdaQuery()
-                .in(PictureCategoryTag::getTagId, ids)
+        Long count = pictureTagService.lambdaQuery()
+                .in(PictureTag::getTagId, ids)
                 .count();
         if (count > 0) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "标签在使用中，无法删除");

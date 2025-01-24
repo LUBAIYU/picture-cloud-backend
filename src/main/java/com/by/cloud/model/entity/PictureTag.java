@@ -4,20 +4,19 @@ import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
-import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Data;
 
 import java.io.Serial;
 import java.io.Serializable;
 
 /**
- * 图片分类标签关联表
+ * 图片标签关联表
  *
  * @author lzh
  */
-@TableName(value = "picture_category_tag")
+@TableName(value = "picture_tag")
 @Data
-public class PictureCategoryTag implements Serializable {
+public class PictureTag implements Serializable {
     /**
      * 主键ID
      */
@@ -28,11 +27,6 @@ public class PictureCategoryTag implements Serializable {
      * 图片ID
      */
     private Long pictureId;
-
-    /**
-     * 分类ID
-     */
-    private Long categoryId;
 
     /**
      * 标签ID

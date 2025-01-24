@@ -13,12 +13,13 @@ import com.by.cloud.mapper.CategoryMapper;
 import com.by.cloud.model.dto.category.CategoryPageDto;
 import com.by.cloud.model.dto.category.CategoryUpdateDto;
 import com.by.cloud.model.entity.Category;
-import com.by.cloud.model.entity.PictureCategoryTag;
+import com.by.cloud.model.entity.Picture;
 import com.by.cloud.model.vo.category.CategoryListVo;
 import com.by.cloud.service.CategoryService;
-import com.by.cloud.service.PictureCategoryTagService;
+import com.by.cloud.service.PictureService;
 import com.by.cloud.utils.ThrowUtils;
 import org.springframework.aop.framework.AopContext;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
@@ -32,8 +33,9 @@ import java.util.List;
 @Service
 public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category> implements CategoryService {
 
+    @Lazy
     @Resource
-    private PictureCategoryTagService pictureCategoryTagService;
+    private PictureService pictureService;
 
     @Override
     public void addBatchCategory(List<String> categoryNameList) {
@@ -102,8 +104,8 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category> i
     @Override
     public void delBatchCategory(List<Long> ids) {
         // 判断删除的分类是否有使用中
-        Long count = pictureCategoryTagService.lambdaQuery()
-                .in(PictureCategoryTag::getCategoryId, ids)
+        Long count = pictureService.lambdaQuery()
+                .in(Picture::getCategoryId, ids)
                 .count();
         if (count > 0) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "分类在使用中，无法删除");

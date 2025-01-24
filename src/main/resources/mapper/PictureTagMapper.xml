@@ -2,17 +2,15 @@
 <!DOCTYPE mapper
         PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.by.cloud.mapper.PictureCategoryTagMapper">
+<mapper namespace="com.by.cloud.mapper.PictureTagMapper">
 
-    <resultMap id="BaseResultMap" type="com.by.cloud.model.entity.PictureCategoryTag">
+    <resultMap id="BaseResultMap" type="com.by.cloud.model.entity.PictureTag">
         <id property="id" column="id" jdbcType="BIGINT"/>
         <result property="pictureId" column="picture_id" jdbcType="BIGINT"/>
-        <result property="categoryId" column="category_id" jdbcType="BIGINT"/>
         <result property="tagId" column="tag_id" jdbcType="BIGINT"/>
     </resultMap>
 
     <sql id="Base_Column_List">
-        id,picture_id,category_id,
-        tag_id
+        id,picture_id,tag_id
     </sql>
 </mapper>
