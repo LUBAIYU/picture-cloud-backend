@@ -1,6 +1,7 @@
 package com.by.cloud.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.by.cloud.api.aliyunai.model.CreateOutPaintingTaskResponse;
 import com.by.cloud.api.imagesearch.model.ImageSearchResult;
 import com.by.cloud.common.PageResult;
 import com.by.cloud.model.dto.picture.*;
@@ -147,4 +148,12 @@ public interface PictureService extends IService<Picture> {
      * @param editByBatchDto 请求体
      */
     void editPictureByBatch(PictureEditByBatchDto editByBatchDto);
+
+    /**
+     * 创建扩图任务
+     *
+     * @param createOutPaintingTaskDto 扩图参数
+     * @return 扩图结果
+     */
+    CreateOutPaintingTaskResponse createOutPaintingTask(PictureCreateOutPaintingTaskDto createOutPaintingTaskDto);
 }

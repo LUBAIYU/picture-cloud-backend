@@ -59,7 +59,7 @@ public abstract class BasePictureUploadTemplate {
         File tempFile = null;
         try {
             // 上传文件
-            tempFile = File.createTempFile(uploadPath, null);
+            tempFile = File.createTempFile(uuid, null);
             // 转储文件
             transferFile(inputSource, tempFile);
             PutObjectResult putObjectResult = cosManager.putPictureObject(uploadPath, tempFile);

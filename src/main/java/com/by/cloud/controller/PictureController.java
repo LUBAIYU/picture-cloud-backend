@@ -1,6 +1,10 @@
 package com.by.cloud.controller;
 
+import cn.hutool.core.util.StrUtil;
 import com.by.cloud.aop.PreAuthorize;
+import com.by.cloud.api.aliyunai.AliYunAiApi;
+import com.by.cloud.api.aliyunai.model.CreateOutPaintingTaskResponse;
+import com.by.cloud.api.aliyunai.model.GetOutPaintingTaskResponse;
 import com.by.cloud.api.imagesearch.model.ImageSearchResult;
 import com.by.cloud.common.BaseContext;
 import com.by.cloud.common.BaseResponse;
@@ -41,6 +45,9 @@ public class PictureController {
 
     @Resource
     private SpaceService spaceService;
+
+    @Resource
+    private AliYunAiApi aliYunAiApi;
 
     @ApiOperation("上传图片")
     @PostMapping("/upload")
@@ -192,5 +199,21 @@ public class PictureController {
         ThrowUtils.throwIf(pictureEditByBatchDto == null, ErrorCode.PARAMS_ERROR);
         pictureService.editPictureByBatch(pictureEditByBatchDto);
         return ResultUtils.success(true);
+    }
+
+    @ApiOperation("创建AI扩图任务")
+    @PostMapping("/out_painting/create_task")
+    public BaseResponse<CreateOutPaintingTaskResponse> createOutPaintingTask(@RequestBody PictureCreateOutPaintingTaskDto createOutPaintingTaskDto) {
+        ThrowUtils.throwIf(createOutPaintingTaskDto == null, ErrorCode.PARAMS_ERROR);
+        CreateOutPaintingTaskResponse response = pictureService.createOutPaintingTask(createOutPaintingTaskDto);
+        return ResultUtils.success(response);
+    }
+
+    @ApiOperation("查询AI扩图任务")
+    @GetMapping("/out_painting/get_task")
+    public BaseResponse<GetOutPaintingTaskResponse> getOutPaintingTask(String taskId) {
+        ThrowUtils.throwIf(StrUtil.isBlank(taskId), ErrorCode.PARAMS_ERROR);
+        GetOutPaintingTaskResponse task = aliYunAiApi.getOutPaintingTask(taskId);
+        return ResultUtils.success(task);
     }
 }

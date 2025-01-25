@@ -1,6 +1,5 @@
 package com.by.cloud.common.upload;
 
-import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.http.*;
 import com.by.cloud.constants.PictureConstant;
@@ -67,7 +66,14 @@ public class UrlPictureUpload extends BasePictureUploadTemplate {
     @Override
     protected String getOriginalFilename(Object inputSource) {
         String fileUrl = (String) inputSource;
-        return FileUtil.mainName(fileUrl);
+        // 获取URL地址中的文件后缀
+        int lastSlashIndex = fileUrl.lastIndexOf('/');
+        int questionIndex = fileUrl.indexOf('?');
+        if (questionIndex == -1) {
+            questionIndex = fileUrl.length();
+        }
+        // 返回包含后缀的文件名
+        return fileUrl.substring(lastSlashIndex + 1, questionIndex);
     }
 
     @Override
