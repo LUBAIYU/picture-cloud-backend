@@ -92,9 +92,7 @@ public class SpaceServiceImpl extends ServiceImpl<SpaceMapper, Space> implements
         ThrowUtils.throwIf(space == null, ErrorCode.NOT_FOUND_ERROR);
         // 判断登录用户是否有权限删除
         Long loginUserId = BaseContext.getLoginUserId();
-        if (!space.getUserId().equals(loginUserId) && !userService.isAdmin(loginUserId)) {
-            throw new BusinessException(ErrorCode.NO_AUTH_ERROR);
-        }
+        checkSpaceAuth(space, loginUserId);
         // 删除
         boolean removed = this.removeById(id);
         ThrowUtils.throwIf(!removed, ErrorCode.OPERATION_ERROR);
@@ -154,9 +152,7 @@ public class SpaceServiceImpl extends ServiceImpl<SpaceMapper, Space> implements
 
         // 判断是否有权限
         Long loginUserId = BaseContext.getLoginUserId();
-        if (!loginUserId.equals(space.getUserId()) && !userService.isAdmin(loginUserId)) {
-            throw new BusinessException(ErrorCode.NO_AUTH_ERROR);
-        }
+        checkSpaceAuth(space, loginUserId);
 
         // 获取创建的用户信息
         User user = userService.getById(space.getUserId());
@@ -271,6 +267,13 @@ public class SpaceServiceImpl extends ServiceImpl<SpaceMapper, Space> implements
             });
             // 如果为空返回-1
             return Optional.ofNullable(spaceId).orElse(-1L);
+        }
+    }
+
+    @Override
+    public void checkSpaceAuth(Space space, Long loginUserId) {
+        if (!loginUserId.equals(space.getUserId()) && !userService.isAdmin(loginUserId)) {
+            throw new BusinessException(ErrorCode.NO_AUTH_ERROR);
         }
     }
 }

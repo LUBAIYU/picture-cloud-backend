@@ -95,4 +95,44 @@
         </where>
         order by p.create_time desc
     </select>
+
+    <select id="getCategoryAnalyze" resultType="com.by.cloud.model.vo.space.analyze.SpaceCategoryAnalyzeVo">
+        select c.name as category,
+        count(*) as count,
+        sum(p.pic_size) as totalSize
+        from picture p
+        left join category c
+        on p.category_id = c.id
+        <where>
+            p.is_delete = 0 and c.is_delete = 0
+            <if test="dto.queryAll == false and dto.queryPublic == true and dto.spaceId == null">
+                and p.space_id is null
+            </if>
+            <if test="dto.queryAll == false and dto.queryPublic == false and dto.spaceId != null">
+                and p.space_id = #{dto.spaceId}
+            </if>
+        </where>
+        group by c.name
+    </select>
+
+    <select id="getTagAnalyze" resultType="com.by.cloud.model.vo.space.analyze.SpaceTagAnalyzeVo">
+        select t.name as tag,
+        count(*) as count
+        from picture p
+        left join picture_tag pt
+        on p.pic_id = pt.picture_id
+        left join tag t
+        on pt.tag_id = t.id
+        <where>
+            p.is_delete = 0 and t.is_delete = 0
+            <if test="dto.queryAll == false and dto.queryPublic == true and dto.spaceId == null">
+                and p.space_id is null
+            </if>
+            <if test="dto.queryAll == false and dto.queryPublic == false and dto.spaceId != null">
+                and p.space_id = #{dto.spaceId}
+            </if>
+        </where>
+        group by t.name
+        order by count desc
+    </select>
 </mapper>

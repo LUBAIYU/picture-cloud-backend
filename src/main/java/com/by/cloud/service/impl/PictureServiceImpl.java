@@ -45,6 +45,8 @@ import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 import org.springframework.aop.framework.AopContext;
+import org.springframework.data.redis.connection.RedisConnection;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.scheduling.annotation.Async;
@@ -93,6 +95,7 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture> impl
             // 缓存 5 分钟
             .expireAfterWrite(Duration.ofMinutes(5))
             .build();
+    private final RedisTemplate redisTemplate;
 
     @Override
     public PictureVo uploadPicture(Object inputSource, PictureUploadDto dto) {
@@ -631,6 +634,15 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture> impl
 
         // 删除远程COS图片
         this.clearPictureFile(picture);
+
+        // 如果是公共图库的图片，则删除缓存
+        if (picture.getSpaceId() == null) {
+            LOCAL_CACHE.invalidateAll();
+            stringRedisTemplate.execute((RedisConnection connection) -> {
+                connection.flushDb();
+                return null;
+            });
+        }
 
         // 开启事务
         transactionTemplate.executeWithoutResult(status -> {
