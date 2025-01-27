@@ -1,22 +1,19 @@
 package com.by.cloud.service.impl;
 
 import cn.hutool.core.util.NumberUtil;
+import cn.hutool.core.util.ObjectUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.by.cloud.common.BaseContext;
 import com.by.cloud.enums.ErrorCode;
 import com.by.cloud.exception.BusinessException;
 import com.by.cloud.mapper.PictureMapper;
 import com.by.cloud.mapper.SpaceMapper;
-import com.by.cloud.model.dto.space.analyze.SpaceAnalyzeDto;
-import com.by.cloud.model.dto.space.analyze.SpaceCategoryAnalyzeDto;
-import com.by.cloud.model.dto.space.analyze.SpaceTagAnalyzeDto;
-import com.by.cloud.model.dto.space.analyze.SpaceUsageAnalyzeDto;
+import com.by.cloud.model.dto.space.analyze.*;
 import com.by.cloud.model.entity.Picture;
 import com.by.cloud.model.entity.Space;
-import com.by.cloud.model.vo.space.analyze.SpaceCategoryAnalyzeVo;
-import com.by.cloud.model.vo.space.analyze.SpaceTagAnalyzeVo;
-import com.by.cloud.model.vo.space.analyze.SpaceUsageAnalyzeVo;
+import com.by.cloud.model.vo.space.analyze.*;
 import com.by.cloud.service.PictureService;
 import com.by.cloud.service.SpaceAnalyzeService;
 import com.by.cloud.service.SpaceService;
@@ -25,7 +22,9 @@ import com.by.cloud.utils.ThrowUtils;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -87,6 +86,28 @@ public class SpaceAnalyzeServiceImpl extends ServiceImpl<SpaceMapper, Space> imp
         Long spaceId = spaceAnalyzeDto.getSpaceId();
         if (spaceId != null) {
             queryWrapper.eq(Picture::getSpaceId, spaceId);
+            return;
+        }
+        throw new BusinessException(ErrorCode.PARAMS_ERROR, "未指定分析范围");
+    }
+
+    @Override
+    public void fillAnalyzeQueryWrapper(SpaceAnalyzeDto spaceAnalyzeDto, QueryWrapper<Picture> queryWrapper) {
+        // 查询全空间
+        boolean queryAll = spaceAnalyzeDto.isQueryAll();
+        if (queryAll) {
+            return;
+        }
+        // 查询公共图库
+        boolean queryPublic = spaceAnalyzeDto.isQueryPublic();
+        if (queryPublic) {
+            queryWrapper.isNull("space_id");
+            return;
+        }
+        // 查询特定空间
+        Long spaceId = spaceAnalyzeDto.getSpaceId();
+        if (spaceId != null) {
+            queryWrapper.eq("space_id", spaceId);
             return;
         }
         throw new BusinessException(ErrorCode.PARAMS_ERROR, "未指定分析范围");
@@ -157,5 +178,124 @@ public class SpaceAnalyzeServiceImpl extends ServiceImpl<SpaceMapper, Space> imp
         checkSpaceAnalyzeAuth(spaceTagAnalyzeDto, loginUserId);
         // 连表查询
         return pictureMapper.getTagAnalyze(spaceTagAnalyzeDto);
+    }
+
+    @Override
+    public List<SpaceSizeAnalyzeVo> getSizeAnalyze(SpaceSizeAnalyzeDto spaceSizeAnalyzeDto) {
+        // 获取当前登录用户ID
+        Long loginUserId = BaseContext.getLoginUserId();
+        // 权限校验
+        checkSpaceAnalyzeAuth(spaceSizeAnalyzeDto, loginUserId);
+
+        LambdaQueryWrapper<Picture> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.select(Picture::getPicSize);
+        // 填充查询参数
+        fillAnalyzeQueryWrapper(spaceSizeAnalyzeDto, queryWrapper);
+
+        // 获取所有图片的大小列表
+        List<Long> picSizeList = pictureMapper.selectObjs(queryWrapper).stream()
+                .map(obj -> obj instanceof Long ? (Long) obj : 0L)
+                .toList();
+
+        // 定义分段范围，使用有序集合存储
+        Map<String, Long> sizeRangeMap = getSizeRangeMap(picSizeList);
+
+        // 封装返回
+        return sizeRangeMap.entrySet().stream()
+                .map(entry -> new SpaceSizeAnalyzeVo(entry.getKey(), entry.getValue()))
+                .toList();
+    }
+
+    @Override
+    public List<SpaceUserAnalyzeVo> getUserAnalyze(SpaceUserAnalyzeDto spaceUserAnalyzeDto) {
+        // 获取当前登录用户ID
+        Long loginUserId = BaseContext.getLoginUserId();
+        // 权限校验
+        checkSpaceAnalyzeAuth(spaceUserAnalyzeDto, loginUserId);
+
+        QueryWrapper<Picture> queryWrapper = new QueryWrapper<>();
+        // 填充查询参数
+        fillAnalyzeQueryWrapper(spaceUserAnalyzeDto, queryWrapper);
+        Long userId = spaceUserAnalyzeDto.getUserId();
+        queryWrapper.eq(ObjectUtil.isNotNull(userId), "user_id", userId);
+
+        // 根据时间纬度查询
+        String timeDimension = spaceUserAnalyzeDto.getTimeDimension();
+        switch (timeDimension) {
+            case "day":
+                queryWrapper.select("DATE_FORMAT(create_time,'%Y-%m-%d') as period", "COUNT(*) as count");
+                break;
+            case "week":
+                queryWrapper.select("YEARWEEK(create_time) as period", "COUNT(*) as count");
+                break;
+            case "month":
+                queryWrapper.select("DATE_FORMAT(create_time,'%Y-%m') as period", "COUNT(*) as count");
+                break;
+            default:
+                throw new BusinessException(ErrorCode.PARAMS_ERROR, "不支持的时间纬度");
+        }
+
+        // 分组和排序
+        queryWrapper.groupBy("period").orderByAsc("period");
+
+        // 查询返回
+        return pictureMapper.selectMaps(queryWrapper)
+                .stream()
+                .map(map -> {
+                    String period = map.get("period").toString();
+                    Long count = Long.parseLong(map.get("count").toString());
+                    return new SpaceUserAnalyzeVo(period, count);
+                }).toList();
+    }
+
+    @Override
+    public List<Space> getSpaceAnalyze(SpaceRankAnalyzeDto spaceRankAnalyzeDto) {
+        // 获取当前登录用户ID
+        Long loginUserId = BaseContext.getLoginUserId();
+        // 仅管理员可分析
+        ThrowUtils.throwIf(!userService.isAdmin(loginUserId), ErrorCode.NO_AUTH_ERROR);
+
+        // 构造查询条件
+        LambdaQueryWrapper<Space> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.select(Space::getId, Space::getSpaceName, Space::getUserId, Space::getTotalSize)
+                .orderByDesc(Space::getTotalSize)
+                .last("limit " + spaceRankAnalyzeDto.getTopN());
+
+        // 查询结果
+        return spaceService.list(queryWrapper);
+    }
+
+    /**
+     * 获取图片大小分段统计
+     *
+     * @param picSizeList 图片大小列表
+     * @return 有序集合
+     */
+    private static Map<String, Long> getSizeRangeMap(List<Long> picSizeList) {
+        long firstSizeRangeCount = 0;
+        long secondSizeRangeCount = 0;
+        long thirdSizeRangeCount = 0;
+        long fourthSizeRangeCount = 0;
+        for (Long picSize : picSizeList) {
+            // <100KB
+            if (picSize < 100 * 1024) {
+                firstSizeRangeCount++;
+                // >=100KB && <500KB
+            } else if (picSize < 500 * 1024) {
+                secondSizeRangeCount++;
+                // >=500KB && <1MB
+            } else if (picSize < 1024 * 1024) {
+                thirdSizeRangeCount++;
+                // >1MB
+            } else {
+                fourthSizeRangeCount++;
+            }
+        }
+        Map<String, Long> sizeRangeMap = new LinkedHashMap<>();
+        sizeRangeMap.put("<100KB", firstSizeRangeCount);
+        sizeRangeMap.put("100KB-500KB", secondSizeRangeCount);
+        sizeRangeMap.put("500KB-1MB", thirdSizeRangeCount);
+        sizeRangeMap.put(">1MB", fourthSizeRangeCount);
+        return sizeRangeMap;
     }
 }

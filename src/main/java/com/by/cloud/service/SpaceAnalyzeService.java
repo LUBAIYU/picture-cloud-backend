@@ -1,16 +1,12 @@
 package com.by.cloud.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.IService;
-import com.by.cloud.model.dto.space.analyze.SpaceAnalyzeDto;
-import com.by.cloud.model.dto.space.analyze.SpaceCategoryAnalyzeDto;
-import com.by.cloud.model.dto.space.analyze.SpaceTagAnalyzeDto;
-import com.by.cloud.model.dto.space.analyze.SpaceUsageAnalyzeDto;
+import com.by.cloud.model.dto.space.analyze.*;
 import com.by.cloud.model.entity.Picture;
 import com.by.cloud.model.entity.Space;
-import com.by.cloud.model.vo.space.analyze.SpaceCategoryAnalyzeVo;
-import com.by.cloud.model.vo.space.analyze.SpaceTagAnalyzeVo;
-import com.by.cloud.model.vo.space.analyze.SpaceUsageAnalyzeVo;
+import com.by.cloud.model.vo.space.analyze.*;
 
 import java.util.List;
 
@@ -36,6 +32,14 @@ public interface SpaceAnalyzeService extends IService<Space> {
     void fillAnalyzeQueryWrapper(SpaceAnalyzeDto spaceAnalyzeDto, LambdaQueryWrapper<Picture> queryWrapper);
 
     /**
+     * 根据分析参数填充查询条件
+     *
+     * @param spaceAnalyzeDto 分析参数
+     * @param queryWrapper    查询条件
+     */
+    void fillAnalyzeQueryWrapper(SpaceAnalyzeDto spaceAnalyzeDto, QueryWrapper<Picture> queryWrapper);
+
+    /**
      * 获取空间使用情况分析
      *
      * @param spaceUsageAnalyzeDto 分析参数
@@ -58,4 +62,28 @@ public interface SpaceAnalyzeService extends IService<Space> {
      * @return 分析结果
      */
     List<SpaceTagAnalyzeVo> getTagAnalyze(SpaceTagAnalyzeDto spaceTagAnalyzeDto);
+
+    /**
+     * 获取空间图片大小情况分析
+     *
+     * @param spaceSizeAnalyzeDto 分析参数
+     * @return 分析结果
+     */
+    List<SpaceSizeAnalyzeVo> getSizeAnalyze(SpaceSizeAnalyzeDto spaceSizeAnalyzeDto);
+
+    /**
+     * 获取空间用户上传情况分析
+     *
+     * @param spaceUserAnalyzeDto 分析参数
+     * @return 分析结果
+     */
+    List<SpaceUserAnalyzeVo> getUserAnalyze(SpaceUserAnalyzeDto spaceUserAnalyzeDto);
+
+    /**
+     * 获取空间排行分析
+     *
+     * @param spaceRankAnalyzeDto 分析参数
+     * @return 分析结果
+     */
+    List<Space> getSpaceAnalyze(SpaceRankAnalyzeDto spaceRankAnalyzeDto);
 }

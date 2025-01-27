@@ -1,13 +1,12 @@
 package com.by.cloud.controller;
 
+import com.by.cloud.aop.PreAuthorize;
 import com.by.cloud.common.BaseResponse;
 import com.by.cloud.enums.ErrorCode;
-import com.by.cloud.model.dto.space.analyze.SpaceCategoryAnalyzeDto;
-import com.by.cloud.model.dto.space.analyze.SpaceTagAnalyzeDto;
-import com.by.cloud.model.dto.space.analyze.SpaceUsageAnalyzeDto;
-import com.by.cloud.model.vo.space.analyze.SpaceCategoryAnalyzeVo;
-import com.by.cloud.model.vo.space.analyze.SpaceTagAnalyzeVo;
-import com.by.cloud.model.vo.space.analyze.SpaceUsageAnalyzeVo;
+import com.by.cloud.enums.UserRoleEnum;
+import com.by.cloud.model.dto.space.analyze.*;
+import com.by.cloud.model.entity.Space;
+import com.by.cloud.model.vo.space.analyze.*;
 import com.by.cloud.service.SpaceAnalyzeService;
 import com.by.cloud.utils.ResultUtils;
 import com.by.cloud.utils.ThrowUtils;
@@ -54,5 +53,30 @@ public class SpaceAnalyzeController {
         ThrowUtils.throwIf(spaceTagAnalyzeDto == null, ErrorCode.PARAMS_ERROR);
         List<SpaceTagAnalyzeVo> spaceTagAnalyzeVoList = spaceAnalyzeService.getTagAnalyze(spaceTagAnalyzeDto);
         return ResultUtils.success(spaceTagAnalyzeVoList);
+    }
+
+    @ApiOperation("空间图片大小分析")
+    @PostMapping("/size")
+    public BaseResponse<List<SpaceSizeAnalyzeVo>> getSizeAnalyze(@RequestBody SpaceSizeAnalyzeDto spaceSizeAnalyzeDto) {
+        ThrowUtils.throwIf(spaceSizeAnalyzeDto == null, ErrorCode.PARAMS_ERROR);
+        List<SpaceSizeAnalyzeVo> spaceSizeAnalyzeVoList = spaceAnalyzeService.getSizeAnalyze(spaceSizeAnalyzeDto);
+        return ResultUtils.success(spaceSizeAnalyzeVoList);
+    }
+
+    @ApiOperation("用户上传行为分析")
+    @PostMapping("/user")
+    public BaseResponse<List<SpaceUserAnalyzeVo>> getUserAnalyze(@RequestBody SpaceUserAnalyzeDto spaceUserAnalyzeDto) {
+        ThrowUtils.throwIf(spaceUserAnalyzeDto == null, ErrorCode.PARAMS_ERROR);
+        List<SpaceUserAnalyzeVo> spaceUserAnalyzeVoList = spaceAnalyzeService.getUserAnalyze(spaceUserAnalyzeDto);
+        return ResultUtils.success(spaceUserAnalyzeVoList);
+    }
+
+    @ApiOperation("空间使用排行分析")
+    @PreAuthorize(role = UserRoleEnum.ADMIN)
+    @PostMapping("/rank")
+    public BaseResponse<List<Space>> getSpaceAnalyze(@RequestBody SpaceRankAnalyzeDto spaceRankAnalyzeDto) {
+        ThrowUtils.throwIf(spaceRankAnalyzeDto == null, ErrorCode.PARAMS_ERROR);
+        List<Space> spaceList = spaceAnalyzeService.getSpaceAnalyze(spaceRankAnalyzeDto);
+        return ResultUtils.success(spaceList);
     }
 }
