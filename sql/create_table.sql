@@ -88,6 +88,7 @@ create table if not exists space
     id          bigint auto_increment comment 'id' primary key,
     space_name  varchar(128)                       null comment '空间名称',
     space_level int      default 0                 null comment '空间级别：0-普通版 1-专业版 2-旗舰版',
+    space_type  int      default 0                 not null comment '空间类型：0-私有 1-团队',
     max_size    bigint   default 0                 null comment '空间图片的最大总大小',
     max_count   bigint   default 0                 null comment '空间图片的最大数量',
     total_size  bigint   default 0                 null comment '当前空间下图片的总大小',
@@ -98,7 +99,24 @@ create table if not exists space
     update_time datetime default CURRENT_TIMESTAMP not null on update CURRENT_TIMESTAMP comment '更新时间',
     is_delete   tinyint  default 0                 not null comment '是否删除',
     -- 索引设计
-    index idx_user_id (user_id),        -- 提升基于用户的查询效率
-    index idx_space_name (space_name),  -- 提升基于空间名称的查询效率
-    index idx_space_level (space_level) -- 提升按空间级别查询的效率
+    index idx_user_id (user_id),         -- 提升基于用户的查询效率
+    index idx_space_name (space_name),   -- 提升基于空间名称的查询效率
+    index idx_space_level (space_level), -- 提升按空间级别查询的效率
+    index idx_space_type (space_type)    -- 提升按空间类型查询的效率
 ) comment '空间表' collate = utf8mb4_unicode_ci;
+
+-- 空间成员表
+create table if not exists space_user
+(
+    id          bigint auto_increment comment 'id' primary key,
+    space_id    bigint                                 not null comment '空间 id',
+    user_id     bigint                                 not null comment '用户 id',
+    space_role  varchar(128) default 'viewer'          null comment '空间角色：viewer/editor/admin',
+    create_time datetime     default CURRENT_TIMESTAMP not null comment '创建时间',
+    update_time datetime     default CURRENT_TIMESTAMP not null on update CURRENT_TIMESTAMP comment '更新时间',
+    -- 索引设计
+    UNIQUE KEY uk_spaceId_userId (space_id, user_id), -- 唯一索引，用户在一个空间中只能有一个角色
+    INDEX idx_space_id (space_id),                    -- 提升按空间查询的性能
+    INDEX idx_user_id (user_id)                       -- 提升按用户查询的性能
+) comment '空间用户关联' collate = utf8mb4_unicode_ci;
+
