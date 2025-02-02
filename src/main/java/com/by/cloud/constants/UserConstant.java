@@ -12,4 +12,6 @@ public interface UserConstant {
     int USER_ACCOUNT_LENGTH = 4;
 
     int USER_PASSWORD_LENGTH = 8;
+
+    String USER_LOGIN_STATE = "user_login_state";
 }

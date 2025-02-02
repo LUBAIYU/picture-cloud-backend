@@ -4,6 +4,8 @@ import cn.hutool.core.util.ObjectUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.by.cloud.common.BaseContext;
 import com.by.cloud.common.BaseResponse;
+import com.by.cloud.common.auth.annotation.SaSpaceCheckPermission;
+import com.by.cloud.constants.SpaceUserPermissionConstant;
 import com.by.cloud.enums.ErrorCode;
 import com.by.cloud.model.dto.spaceuser.SpaceUserAddDto;
 import com.by.cloud.model.dto.spaceuser.SpaceUserEditDto;
@@ -33,6 +35,7 @@ public class SpaceUserController {
 
     @ApiOperation("添加成员到空间")
     @PostMapping("/add")
+    @SaSpaceCheckPermission(value = SpaceUserPermissionConstant.SPACE_USER_MANAGE)
     public BaseResponse<Long> addSpaceUser(@RequestBody SpaceUserAddDto spaceUserAddDto) {
         ThrowUtils.throwIf(spaceUserAddDto == null, ErrorCode.PARAMS_ERROR);
         long id = spaceUserService.addSpaceUser(spaceUserAddDto);
@@ -41,6 +44,7 @@ public class SpaceUserController {
 
     @ApiOperation("从空间移除成员")
     @DeleteMapping("/delete/{id}")
+    @SaSpaceCheckPermission(value = SpaceUserPermissionConstant.SPACE_USER_MANAGE)
     public BaseResponse<Boolean> deleteSpaceUserById(@PathVariable Long id) {
         ThrowUtils.throwIf(id == null || id <= 0, ErrorCode.PARAMS_ERROR);
         spaceUserService.deleteById(id);
@@ -49,6 +53,7 @@ public class SpaceUserController {
 
     @ApiOperation("查询某个成员在某个空间的信息")
     @PostMapping("/get")
+    @SaSpaceCheckPermission(value = SpaceUserPermissionConstant.SPACE_USER_MANAGE)
     public BaseResponse<SpaceUser> getSpaceUser(@RequestBody SpaceUserQueryDto queryDto) {
         ThrowUtils.throwIf(queryDto == null, ErrorCode.PARAMS_ERROR);
         // 参数校验
@@ -65,6 +70,7 @@ public class SpaceUserController {
 
     @ApiOperation("查询空间成员列表")
     @PostMapping("/list")
+    @SaSpaceCheckPermission(value = SpaceUserPermissionConstant.SPACE_USER_MANAGE)
     public BaseResponse<List<SpaceUserVo>> listSpaceUser(@RequestBody SpaceUserQueryDto queryDto) {
         ThrowUtils.throwIf(queryDto == null, ErrorCode.PARAMS_ERROR);
         List<SpaceUserVo> spaceUserVoList = spaceUserService.querySpaceVoList(queryDto);
@@ -73,6 +79,7 @@ public class SpaceUserController {
 
     @ApiOperation("编辑成员信息")
     @PutMapping("/edit")
+    @SaSpaceCheckPermission(value = SpaceUserPermissionConstant.SPACE_USER_MANAGE)
     public BaseResponse<Boolean> editSpaceUser(@RequestBody SpaceUserEditDto editDto) {
         ThrowUtils.throwIf(editDto == null, ErrorCode.PARAMS_ERROR);
         spaceUserService.editSpaceUserById(editDto);

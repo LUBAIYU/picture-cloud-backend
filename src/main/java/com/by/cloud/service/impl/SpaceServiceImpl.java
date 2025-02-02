@@ -9,6 +9,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.by.cloud.common.BaseContext;
 import com.by.cloud.common.PageResult;
+import com.by.cloud.common.auth.SpaceUserAuthManager;
 import com.by.cloud.constants.SpaceConstant;
 import com.by.cloud.enums.ErrorCode;
 import com.by.cloud.enums.SpaceLevelEnum;
@@ -47,6 +48,9 @@ public class SpaceServiceImpl extends ServiceImpl<SpaceMapper, Space> implements
 
     @Resource
     private SpaceUserService spaceUserService;
+
+    @Resource
+    private SpaceUserAuthManager spaceUserAuthManager;
 
     @Resource
     private TransactionTemplate transactionTemplate;
@@ -178,6 +182,11 @@ public class SpaceServiceImpl extends ServiceImpl<SpaceMapper, Space> implements
         }
         SpaceVo spaceVo = SpaceVo.objToVo(space);
         spaceVo.setUserVo(userVo);
+
+        // 获取权限列表
+        List<String> permissionList = spaceUserAuthManager.getPermissionList(space, loginUserId);
+        spaceVo.setPermissionList(permissionList);
+
         return spaceVo;
     }
 

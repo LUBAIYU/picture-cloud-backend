@@ -23,6 +23,7 @@ import com.by.cloud.service.SpaceService;
 import com.by.cloud.service.SpaceUserService;
 import com.by.cloud.service.UserService;
 import com.by.cloud.utils.ThrowUtils;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
@@ -43,6 +44,7 @@ public class SpaceUserServiceImpl extends ServiceImpl<SpaceUserMapper, SpaceUser
     private UserService userService;
 
     @Resource
+    @Lazy
     private SpaceService spaceService;
 
     @Override

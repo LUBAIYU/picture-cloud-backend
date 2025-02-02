@@ -39,7 +39,7 @@ public class WebMvcConfiguration extends WebMvcConfigurationSupport {
         log.info("开始注册自定义拦截器...");
         registry.addInterceptor(jwtInterceptor)
                 .addPathPatterns("/**")
-                .excludePathPatterns("/user/login", "/user/register")
+                .excludePathPatterns("/user/login", "/user/register", "/picture/cache/vo/page", "/picture/vo/get")
                 .excludePathPatterns("/swagger-resources/**", "/webjars/**", "/v2/**", "/swagger-ui.html/**");
     }
 

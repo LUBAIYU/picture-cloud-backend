@@ -11,6 +11,8 @@ import lombok.Data;
 import java.io.Serial;
 import java.io.Serializable;
 import java.time.LocalDateTime;
+import java.util.Collections;
+import java.util.List;
 
 /**
  * 空间返回类
@@ -49,6 +51,9 @@ public class SpaceVo implements Serializable {
 
     @ApiModelProperty("创建用户")
     private UserVo userVo;
+
+    @ApiModelProperty("权限列表")
+    private List<String> permissionList = Collections.emptyList();
 
     @ApiModelProperty("创建时间")
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")

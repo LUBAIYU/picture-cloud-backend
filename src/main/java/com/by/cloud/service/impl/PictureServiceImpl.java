@@ -17,10 +17,13 @@ import com.by.cloud.api.imagesearch.model.ImageSearchResult;
 import com.by.cloud.common.BaseContext;
 import com.by.cloud.common.CosManager;
 import com.by.cloud.common.PageResult;
+import com.by.cloud.common.auth.SpaceUserAuthManager;
+import com.by.cloud.common.auth.StpKit;
 import com.by.cloud.common.upload.BasePictureUploadTemplate;
 import com.by.cloud.common.upload.FilePictureUpload;
 import com.by.cloud.common.upload.UrlPictureUpload;
 import com.by.cloud.constants.PictureConstant;
+import com.by.cloud.constants.SpaceUserPermissionConstant;
 import com.by.cloud.enums.ErrorCode;
 import com.by.cloud.enums.PictureReviewStatusEnum;
 import com.by.cloud.exception.BusinessException;
@@ -46,7 +49,6 @@ import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 import org.springframework.aop.framework.AopContext;
 import org.springframework.data.redis.connection.RedisConnection;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.scheduling.annotation.Async;
@@ -84,6 +86,7 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture> impl
     private final TransactionTemplate transactionTemplate;
     private final PictureMapper pictureMapper;
     private final AliYunAiApi aliYunAiApi;
+    private final SpaceUserAuthManager spaceUserAuthManager;
 
     /**
      * 本地缓存
@@ -95,7 +98,6 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture> impl
             // 缓存 5 分钟
             .expireAfterWrite(Duration.ofMinutes(5))
             .build();
-    private final RedisTemplate redisTemplate;
 
     @Override
     public PictureVo uploadPicture(Object inputSource, PictureUploadDto dto) {
@@ -207,13 +209,25 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture> impl
         // 判断图片是否存在
         Picture picture = this.getById(picId);
         ThrowUtils.throwIf(picture == null, ErrorCode.NOT_FOUND_ERROR);
-        // 校验空间权限
+
+        // 校验权限
         Long spaceId = picture.getSpaceId();
+        Space space = null;
         if (spaceId != null) {
-            checkPictureAuth(picture);
+            // 判断是否有权限
+            boolean hasPermission = StpKit.SPACE.hasPermission(SpaceUserPermissionConstant.PICTURE_VIEW);
+            ThrowUtils.throwIf(!hasPermission, ErrorCode.NO_AUTH_ERROR);
+            // 获取空间
+            space = spaceService.getById(spaceId);
+            ThrowUtils.throwIf(space == null, ErrorCode.NOT_FOUND_ERROR, "空间不存在");
         }
+        // 获取权限列表
+        Long loginUserId = BaseContext.getLoginUserId();
+        List<String> permissionList = spaceUserAuthManager.getPermissionList(space, loginUserId);
+
         // 获取封装类
         PictureVo pictureVo = PictureVo.objToVo(picture);
+        pictureVo.setPermissionList(permissionList);
 
         // 设置分类
         Long categoryId = pictureVo.getCategoryId();
@@ -409,9 +423,6 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture> impl
         // 判断ID是否存在
         Picture dbPicture = this.getById(picId);
         ThrowUtils.throwIf(dbPicture == null, ErrorCode.NOT_FOUND_ERROR);
-
-        // 判断是否有权限，只有创建用户本人或管理员才能更改
-        this.checkPictureAuth(dbPicture);
 
         // 填充审核参数
         this.fillReviewParams(picture, userService.getLoginUser());
@@ -624,9 +635,6 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture> impl
         Picture picture = this.getById(picId);
         ThrowUtils.throwIf(picture == null, ErrorCode.NOT_FOUND_ERROR);
 
-        // 只有创建用户或者管理员可以删除图片
-        this.checkPictureAuth(picture);
-
         // 删除图片与标签的绑定关系
         pictureTagService.lambdaUpdate()
                 .eq(PictureTag::getPictureId, picId)
@@ -838,8 +846,7 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture> impl
         // 判断图片是否存在
         Picture picture = Optional.ofNullable(this.getById(pictureId))
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND_ERROR, "图片不存在"));
-        // 校验权限
-        checkPictureAuth(picture);
+
         // 设置请求参数
         CreateOutPaintingTaskRequest createOutPaintingTaskRequest = new CreateOutPaintingTaskRequest();
         CreateOutPaintingTaskRequest.Input input = new CreateOutPaintingTaskRequest.Input();

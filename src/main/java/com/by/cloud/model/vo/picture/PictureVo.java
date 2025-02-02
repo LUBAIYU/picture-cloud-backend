@@ -11,6 +11,7 @@ import lombok.Data;
 import java.io.Serial;
 import java.io.Serializable;
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -83,6 +84,9 @@ public class PictureVo implements Serializable {
 
     @ApiModelProperty("审核人ID")
     private Long reviewerId;
+
+    @ApiModelProperty("权限列表")
+    private List<String> permissionList = Collections.emptyList();
 
     @ApiModelProperty("审核时间")
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")

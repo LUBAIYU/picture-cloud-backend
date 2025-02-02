@@ -1,5 +1,7 @@
 package com.by.cloud.exception;
 
+import cn.dev33.satoken.exception.NotLoginException;
+import cn.dev33.satoken.exception.NotPermissionException;
 import com.by.cloud.common.BaseResponse;
 import com.by.cloud.enums.ErrorCode;
 import com.by.cloud.utils.ResultUtils;
@@ -15,6 +17,18 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 @Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+    @ExceptionHandler(NotLoginException.class)
+    public BaseResponse<?> notLoginException(NotLoginException e) {
+        log.error("NotLoginException", e);
+        return ResultUtils.error(ErrorCode.NOT_LOGIN_ERROR, e.getMessage());
+    }
+
+    @ExceptionHandler(NotPermissionException.class)
+    public BaseResponse<?> notPermissionExceptionHandler(NotPermissionException e) {
+        log.error("NotPermissionException", e);
+        return ResultUtils.error(ErrorCode.NO_AUTH_ERROR, e.getMessage());
+    }
 
     @ExceptionHandler(BusinessException.class)
     public static BaseResponse<?> businessExceptionHandler(BusinessException be) {

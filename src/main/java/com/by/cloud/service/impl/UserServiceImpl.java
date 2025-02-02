@@ -12,6 +12,7 @@ import com.by.cloud.common.BaseContext;
 import com.by.cloud.common.FileManager;
 import com.by.cloud.common.JwtProperties;
 import com.by.cloud.common.PageResult;
+import com.by.cloud.common.auth.StpKit;
 import com.by.cloud.constants.UserConstant;
 import com.by.cloud.enums.ErrorCode;
 import com.by.cloud.enums.UserRoleEnum;
@@ -124,10 +125,17 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
         // 创建令牌，并将用户ID存储到令牌中
         Map<String, Object> claims = new HashMap<>(3);
-        claims.put(UserConstant.USER_ID, dbUser.getUserId());
+        Long userId = dbUser.getUserId();
+        claims.put(UserConstant.USER_ID, userId);
         String token = JwtUtils.createJwt(jwtProperties.getSecretKey(), jwtProperties.getTtl(), claims);
         UserLoginVo loginVo = new UserLoginVo();
         loginVo.setToken(token);
+
+        // 保存用户登录态到 Sa-Token
+        StpKit.SPACE.login(userId);
+        User user = this.getById(userId);
+        StpKit.SPACE.getSession().set(UserConstant.USER_LOGIN_STATE, user);
+
         return loginVo;
     }
 
