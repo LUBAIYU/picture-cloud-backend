@@ -29,7 +29,7 @@ import java.util.stream.Collectors;
  *
  * @author lzh
  */
-@Component
+//@Component
 @Slf4j
 public class DynamicShardingManager {
 
