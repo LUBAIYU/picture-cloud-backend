@@ -10,6 +10,7 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.by.cloud.common.BaseContext;
 import com.by.cloud.common.PageResult;
 import com.by.cloud.common.auth.SpaceUserAuthManager;
+import com.by.cloud.common.sharding.DynamicShardingManager;
 import com.by.cloud.constants.SpaceConstant;
 import com.by.cloud.enums.ErrorCode;
 import com.by.cloud.enums.SpaceLevelEnum;
@@ -30,6 +31,7 @@ import com.by.cloud.service.SpaceService;
 import com.by.cloud.service.SpaceUserService;
 import com.by.cloud.service.UserService;
 import com.by.cloud.utils.ThrowUtils;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionTemplate;
 
@@ -51,6 +53,10 @@ public class SpaceServiceImpl extends ServiceImpl<SpaceMapper, Space> implements
 
     @Resource
     private SpaceUserAuthManager spaceUserAuthManager;
+
+    @Resource
+    @Lazy
+    private DynamicShardingManager dynamicShardingManager;
 
     @Resource
     private TransactionTemplate transactionTemplate;
@@ -304,6 +310,8 @@ public class SpaceServiceImpl extends ServiceImpl<SpaceMapper, Space> implements
                     boolean result = spaceUserService.save(spaceUser);
                     ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR, "创建团队成员记录失败");
                 }
+                // 创建分表
+                dynamicShardingManager.createSpacePictureTable(space);
                 return space.getId();
             });
             // 如果为空返回-1

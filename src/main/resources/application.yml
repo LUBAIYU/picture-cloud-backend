@@ -24,6 +24,35 @@ spring:
   servlet:
     multipart:
       max-file-size: 10MB
+
+  # 分库分表配置
+  shardingsphere:
+    datasource:
+      names: picture_cloud
+      picture_cloud:
+        type: com.zaxxer.hikari.HikariDataSource
+        driver-class-name: com.mysql.cj.jdbc.Driver
+        url: jdbc:mysql://localhost:3306/picture_cloud?useUnicode=true&characterEncoding=utf-8&serverTimezone=Asia/Shanghai
+        username: root
+        password: root
+    rules:
+      sharding:
+        tables:
+          picture:
+            actual-data-nodes: picture_cloud.picture   # 动态分表（此处是指系统可用的分表）
+            table-strategy:
+              standard:
+                sharding-column: space_id # 分表字段
+                sharding-algorithm-name: picture_sharding_algorithm  # 使用自定义分片算法
+        sharding-algorithms:
+          picture_sharding_algorithm:
+            type: CLASS_BASED
+            props:
+              strategy: standard
+              algorithmClassName: com.by.cloud.common.sharding.PictureShardingAlgorithm  # 算法类路径
+    props:
+      sql-show: true
+
 # mybatis-plus 配置
 mybatis-plus:
   configuration:
@@ -35,6 +64,7 @@ mybatis-plus:
       logic-delete-field: isDelete
       logic-delete-value: 1
       logic-not-delete-value: 0
+    enable-sql-runner: true
 # knife4j 配置
 knife4j:
   enable: true
