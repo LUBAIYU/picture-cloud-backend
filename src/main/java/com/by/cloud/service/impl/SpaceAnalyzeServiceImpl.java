@@ -5,7 +5,6 @@ import cn.hutool.core.util.ObjectUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.by.cloud.common.BaseContext;
 import com.by.cloud.enums.ErrorCode;
 import com.by.cloud.exception.BusinessException;
 import com.by.cloud.mapper.PictureMapper;
@@ -13,6 +12,7 @@ import com.by.cloud.mapper.SpaceMapper;
 import com.by.cloud.model.dto.space.analyze.*;
 import com.by.cloud.model.entity.Picture;
 import com.by.cloud.model.entity.Space;
+import com.by.cloud.model.entity.User;
 import com.by.cloud.model.vo.space.analyze.*;
 import com.by.cloud.service.PictureService;
 import com.by.cloud.service.SpaceAnalyzeService;
@@ -22,6 +22,7 @@ import com.by.cloud.utils.ThrowUtils;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
+import javax.servlet.http.HttpServletRequest;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -114,9 +115,9 @@ public class SpaceAnalyzeServiceImpl extends ServiceImpl<SpaceMapper, Space> imp
     }
 
     @Override
-    public SpaceUsageAnalyzeVo getSpaceUsageAnalyze(SpaceUsageAnalyzeDto spaceUsageAnalyzeDto) {
+    public SpaceUsageAnalyzeVo getSpaceUsageAnalyze(SpaceUsageAnalyzeDto spaceUsageAnalyzeDto, HttpServletRequest request) {
         // 获取当前登录用户ID
-        Long loginUserId = BaseContext.getLoginUserId();
+        Long loginUserId = userService.getLoginUserId(request);
 
         // 统一校验权限
         checkSpaceAnalyzeAuth(spaceUsageAnalyzeDto, loginUserId);
@@ -161,9 +162,10 @@ public class SpaceAnalyzeServiceImpl extends ServiceImpl<SpaceMapper, Space> imp
     }
 
     @Override
-    public List<SpaceCategoryAnalyzeVo> getCategoryAnalyze(SpaceCategoryAnalyzeDto spaceCategoryAnalyzeDto) {
+    public List<SpaceCategoryAnalyzeVo> getCategoryAnalyze(SpaceCategoryAnalyzeDto spaceCategoryAnalyzeDto, HttpServletRequest request) {
         // 获取当前登录用户ID
-        Long loginUserId = BaseContext.getLoginUserId();
+        User loginUser = userService.getLoginUser(request);
+        Long loginUserId = loginUser.getUserId();
         // 权限校验
         checkSpaceAnalyzeAuth(spaceCategoryAnalyzeDto, loginUserId);
         // 分组查询
@@ -171,9 +173,10 @@ public class SpaceAnalyzeServiceImpl extends ServiceImpl<SpaceMapper, Space> imp
     }
 
     @Override
-    public List<SpaceTagAnalyzeVo> getTagAnalyze(SpaceTagAnalyzeDto spaceTagAnalyzeDto) {
+    public List<SpaceTagAnalyzeVo> getTagAnalyze(SpaceTagAnalyzeDto spaceTagAnalyzeDto, HttpServletRequest request) {
         // 获取当前登录用户ID
-        Long loginUserId = BaseContext.getLoginUserId();
+        User loginUser = userService.getLoginUser(request);
+        Long loginUserId = loginUser.getUserId();
         // 权限校验
         checkSpaceAnalyzeAuth(spaceTagAnalyzeDto, loginUserId);
         // 连表查询
@@ -181,9 +184,10 @@ public class SpaceAnalyzeServiceImpl extends ServiceImpl<SpaceMapper, Space> imp
     }
 
     @Override
-    public List<SpaceSizeAnalyzeVo> getSizeAnalyze(SpaceSizeAnalyzeDto spaceSizeAnalyzeDto) {
+    public List<SpaceSizeAnalyzeVo> getSizeAnalyze(SpaceSizeAnalyzeDto spaceSizeAnalyzeDto, HttpServletRequest request) {
         // 获取当前登录用户ID
-        Long loginUserId = BaseContext.getLoginUserId();
+        User loginUser = userService.getLoginUser(request);
+        Long loginUserId = loginUser.getUserId();
         // 权限校验
         checkSpaceAnalyzeAuth(spaceSizeAnalyzeDto, loginUserId);
 
@@ -207,9 +211,10 @@ public class SpaceAnalyzeServiceImpl extends ServiceImpl<SpaceMapper, Space> imp
     }
 
     @Override
-    public List<SpaceUserAnalyzeVo> getUserAnalyze(SpaceUserAnalyzeDto spaceUserAnalyzeDto) {
+    public List<SpaceUserAnalyzeVo> getUserAnalyze(SpaceUserAnalyzeDto spaceUserAnalyzeDto, HttpServletRequest request) {
         // 获取当前登录用户ID
-        Long loginUserId = BaseContext.getLoginUserId();
+        User loginUser = userService.getLoginUser(request);
+        Long loginUserId = loginUser.getUserId();
         // 权限校验
         checkSpaceAnalyzeAuth(spaceUserAnalyzeDto, loginUserId);
 
@@ -249,9 +254,10 @@ public class SpaceAnalyzeServiceImpl extends ServiceImpl<SpaceMapper, Space> imp
     }
 
     @Override
-    public List<Space> getSpaceAnalyze(SpaceRankAnalyzeDto spaceRankAnalyzeDto) {
+    public List<Space> getSpaceAnalyze(SpaceRankAnalyzeDto spaceRankAnalyzeDto, HttpServletRequest request) {
         // 获取当前登录用户ID
-        Long loginUserId = BaseContext.getLoginUserId();
+        User loginUser = userService.getLoginUser(request);
+        Long loginUserId = loginUser.getUserId();
         // 仅管理员可分析
         ThrowUtils.throwIf(!userService.isAdmin(loginUserId), ErrorCode.NO_AUTH_ERROR);
 

@@ -9,6 +9,8 @@ import com.by.cloud.model.dto.space.SpaceUpdateDto;
 import com.by.cloud.model.entity.Space;
 import com.by.cloud.model.vo.space.SpaceVo;
 
+import javax.servlet.http.HttpServletRequest;
+
 /**
  * @author lzh
  */
@@ -32,16 +34,18 @@ public interface SpaceService extends IService<Space> {
     /**
      * 根据id删除空间
      *
-     * @param id 空间ID
+     * @param id      空间ID
+     * @param request 请求对象
      */
-    void deleteById(Long id);
+    void deleteById(Long id, HttpServletRequest request);
 
     /**
      * 编辑空间
      *
      * @param editDto 请求信息
+     * @param request 请求对象
      */
-    void editSpaceById(SpaceEditDto editDto);
+    void editSpaceById(SpaceEditDto editDto, HttpServletRequest request);
 
     /**
      * 更新空间（仅管理员可用）
@@ -53,10 +57,11 @@ public interface SpaceService extends IService<Space> {
     /**
      * 根据ID获取空间信息
      *
-     * @param id 空间ID
+     * @param id      空间ID
+     * @param request 请求对象
      * @return 空间信息
      */
-    SpaceVo getSpaceVoById(Long id);
+    SpaceVo getSpaceVoById(Long id, HttpServletRequest request);
 
     /**
      * 分页查询空间（仅管理员）
@@ -77,10 +82,11 @@ public interface SpaceService extends IService<Space> {
     /**
      * 创建空间
      *
-     * @param addDto 请求参数
+     * @param addDto  请求参数
+     * @param request 请求对象
      * @return 空间ID
      */
-    long createSpace(SpaceCreateDto addDto);
+    long createSpace(SpaceCreateDto addDto, HttpServletRequest request);
 
     /**
      * 校验空间权限

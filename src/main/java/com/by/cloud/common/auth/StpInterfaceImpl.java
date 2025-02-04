@@ -74,7 +74,7 @@ public class StpInterfaceImpl implements StpInterface {
         List<String> adminPermissions = spaceUserAuthManager.getPermissionsByRole(SpaceRoleEnum.ADMIN.getValue());
 
         // 如果当前用户为管理员，则返回管理员权限列表
-        if (userService.isAdmin((Long) loginId)) {
+        if (userService.isAdmin(Long.parseLong(loginId.toString()))) {
             return adminPermissions;
         }
 

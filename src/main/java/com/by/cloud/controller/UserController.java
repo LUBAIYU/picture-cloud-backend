@@ -5,14 +5,15 @@ import cn.hutool.core.collection.CollUtil;
 import com.by.cloud.aop.PreAuthorize;
 import com.by.cloud.common.BaseResponse;
 import com.by.cloud.common.PageResult;
+import com.by.cloud.constants.UserConstant;
 import com.by.cloud.enums.ErrorCode;
 import com.by.cloud.enums.UserRoleEnum;
+import com.by.cloud.exception.BusinessException;
 import com.by.cloud.model.dto.user.UserLoginDto;
 import com.by.cloud.model.dto.user.UserPageDto;
 import com.by.cloud.model.dto.user.UserRegisterDto;
 import com.by.cloud.model.dto.user.UserUpdateDto;
 import com.by.cloud.model.entity.User;
-import com.by.cloud.model.vo.user.UserLoginVo;
 import com.by.cloud.model.vo.user.UserVo;
 import com.by.cloud.service.UserService;
 import com.by.cloud.utils.ResultUtils;
@@ -24,6 +25,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.annotation.Resource;
+import javax.servlet.http.HttpServletRequest;
 import java.util.List;
 
 /**
@@ -40,9 +42,9 @@ public class UserController {
 
     @ApiOperation("获取当前登录用户信息")
     @GetMapping("/getLoginUser")
-    public BaseResponse<UserVo> getLoginUser() {
-        UserVo userVo = userService.getLoginUser();
-        return ResultUtils.success(userVo);
+    public BaseResponse<User> getLoginUser(HttpServletRequest request) {
+        User user = userService.getLoginUser(request);
+        return ResultUtils.success(user);
     }
 
     @ApiOperation("用户注册")
@@ -55,26 +57,26 @@ public class UserController {
 
     @ApiOperation("用户登录")
     @PostMapping("/login")
-    public BaseResponse<UserLoginVo> login(@RequestBody UserLoginDto dto) {
+    public BaseResponse<UserVo> login(@RequestBody UserLoginDto dto, HttpServletRequest request) {
         ThrowUtils.throwIf(dto == null, ErrorCode.PARAMS_ERROR);
-        UserLoginVo userLoginVo = userService.userLogin(dto);
-        return ResultUtils.success(userLoginVo);
+        UserVo userVo = userService.userLogin(dto, request);
+        return ResultUtils.success(userVo);
     }
 
     @ApiOperation("上传头像")
     @PostMapping("/avatar/upload")
-    public BaseResponse<String> uploadAvatar(@RequestPart("file") MultipartFile multipartFile) {
+    public BaseResponse<String> uploadAvatar(@RequestPart("file") MultipartFile multipartFile, HttpServletRequest request) {
         ThrowUtils.throwIf(multipartFile == null, ErrorCode.PARAMS_ERROR);
-        String avatarUrl = userService.uploadAvatar(multipartFile);
+        String avatarUrl = userService.uploadAvatar(multipartFile, request);
         return ResultUtils.success(avatarUrl);
     }
 
     @ApiOperation("批量删除用户")
     @PreAuthorize(role = UserRoleEnum.ADMIN)
     @DeleteMapping("/batch/delete")
-    public BaseResponse<Boolean> deleteUserByIds(@RequestParam("ids") List<Long> ids) {
+    public BaseResponse<Boolean> deleteUserByIds(@RequestParam("ids") List<Long> ids, HttpServletRequest request) {
         ThrowUtils.throwIf(CollUtil.isEmpty(ids), ErrorCode.PARAMS_ERROR);
-        boolean isTrue = userService.deleteBatchByIds(ids);
+        boolean isTrue = userService.deleteBatchByIds(ids, request);
         return ResultUtils.success(isTrue);
     }
 
@@ -98,18 +100,18 @@ public class UserController {
 
     @ApiOperation("根据ID修改用户信息")
     @PutMapping("/update")
-    public BaseResponse<Boolean> updateUserById(@RequestBody UserUpdateDto updateDto) {
+    public BaseResponse<Boolean> updateUserById(@RequestBody UserUpdateDto updateDto, HttpServletRequest request) {
         ThrowUtils.throwIf(updateDto == null, ErrorCode.PARAMS_ERROR);
-        boolean isSuccess = userService.updateUserById(updateDto);
+        boolean isSuccess = userService.updateUserById(updateDto, request);
         return ResultUtils.success(isSuccess);
     }
 
     @ApiOperation("批量冻结用户")
     @PreAuthorize(role = UserRoleEnum.ADMIN)
     @GetMapping("/batch/freeze")
-    public BaseResponse<Boolean> freezeBatchUsers(@RequestParam("ids") List<Long> ids) {
+    public BaseResponse<Boolean> freezeBatchUsers(@RequestParam("ids") List<Long> ids, HttpServletRequest request) {
         ThrowUtils.throwIf(CollUtil.isEmpty(ids), ErrorCode.PARAMS_ERROR);
-        boolean isSuccess = userService.freezeUsersByIds(ids);
+        boolean isSuccess = userService.freezeUsersByIds(ids, request);
         return ResultUtils.success(isSuccess);
     }
 
@@ -120,5 +122,18 @@ public class UserController {
         ThrowUtils.throwIf(pageDto == null, ErrorCode.PARAMS_ERROR);
         PageResult<UserVo> pageResult = userService.pageUsers(pageDto);
         return ResultUtils.success(pageResult);
+    }
+
+    @ApiOperation("退出登录")
+    @PostMapping("/logout")
+    public BaseResponse<Boolean> logout(HttpServletRequest request) {
+        Object object = request.getSession().getAttribute(UserConstant.USER_LOGIN_STATE);
+        User user = (User) object;
+        if (user == null) {
+            throw new BusinessException(ErrorCode.NOT_LOGIN_ERROR);
+        }
+        // 清除登录态
+        request.getSession().setAttribute(UserConstant.USER_LOGIN_STATE, null);
+        return ResultUtils.success(true);
     }
 }

@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.annotation.Resource;
+import javax.servlet.http.HttpServletRequest;
 import java.util.List;
 
 /**
@@ -33,50 +34,50 @@ public class SpaceAnalyzeController {
 
     @ApiOperation("空间资源使用分析")
     @PostMapping("/usage")
-    public BaseResponse<SpaceUsageAnalyzeVo> getSpaceUsageAnalyze(@RequestBody SpaceUsageAnalyzeDto spaceUsageAnalyzeDto) {
+    public BaseResponse<SpaceUsageAnalyzeVo> getSpaceUsageAnalyze(@RequestBody SpaceUsageAnalyzeDto spaceUsageAnalyzeDto, HttpServletRequest request) {
         ThrowUtils.throwIf(spaceUsageAnalyzeDto == null, ErrorCode.PARAMS_ERROR);
-        SpaceUsageAnalyzeVo spaceUsageAnalyzeVo = spaceAnalyzeService.getSpaceUsageAnalyze(spaceUsageAnalyzeDto);
+        SpaceUsageAnalyzeVo spaceUsageAnalyzeVo = spaceAnalyzeService.getSpaceUsageAnalyze(spaceUsageAnalyzeDto, request);
         return ResultUtils.success(spaceUsageAnalyzeVo);
     }
 
     @ApiOperation("空间图片分类分析")
     @PostMapping("/category")
-    public BaseResponse<List<SpaceCategoryAnalyzeVo>> getCategoryAnalyze(@RequestBody SpaceCategoryAnalyzeDto spaceCategoryAnalyzeDto) {
+    public BaseResponse<List<SpaceCategoryAnalyzeVo>> getCategoryAnalyze(@RequestBody SpaceCategoryAnalyzeDto spaceCategoryAnalyzeDto, HttpServletRequest request) {
         ThrowUtils.throwIf(spaceCategoryAnalyzeDto == null, ErrorCode.PARAMS_ERROR);
-        List<SpaceCategoryAnalyzeVo> spaceCategoryAnalyzeVoList = spaceAnalyzeService.getCategoryAnalyze(spaceCategoryAnalyzeDto);
+        List<SpaceCategoryAnalyzeVo> spaceCategoryAnalyzeVoList = spaceAnalyzeService.getCategoryAnalyze(spaceCategoryAnalyzeDto, request);
         return ResultUtils.success(spaceCategoryAnalyzeVoList);
     }
 
     @ApiOperation("空间图片标签分析")
     @PostMapping("/tag")
-    public BaseResponse<List<SpaceTagAnalyzeVo>> getTagAnalyze(@RequestBody SpaceTagAnalyzeDto spaceTagAnalyzeDto) {
+    public BaseResponse<List<SpaceTagAnalyzeVo>> getTagAnalyze(@RequestBody SpaceTagAnalyzeDto spaceTagAnalyzeDto, HttpServletRequest request) {
         ThrowUtils.throwIf(spaceTagAnalyzeDto == null, ErrorCode.PARAMS_ERROR);
-        List<SpaceTagAnalyzeVo> spaceTagAnalyzeVoList = spaceAnalyzeService.getTagAnalyze(spaceTagAnalyzeDto);
+        List<SpaceTagAnalyzeVo> spaceTagAnalyzeVoList = spaceAnalyzeService.getTagAnalyze(spaceTagAnalyzeDto, request);
         return ResultUtils.success(spaceTagAnalyzeVoList);
     }
 
     @ApiOperation("空间图片大小分析")
     @PostMapping("/size")
-    public BaseResponse<List<SpaceSizeAnalyzeVo>> getSizeAnalyze(@RequestBody SpaceSizeAnalyzeDto spaceSizeAnalyzeDto) {
+    public BaseResponse<List<SpaceSizeAnalyzeVo>> getSizeAnalyze(@RequestBody SpaceSizeAnalyzeDto spaceSizeAnalyzeDto, HttpServletRequest request) {
         ThrowUtils.throwIf(spaceSizeAnalyzeDto == null, ErrorCode.PARAMS_ERROR);
-        List<SpaceSizeAnalyzeVo> spaceSizeAnalyzeVoList = spaceAnalyzeService.getSizeAnalyze(spaceSizeAnalyzeDto);
+        List<SpaceSizeAnalyzeVo> spaceSizeAnalyzeVoList = spaceAnalyzeService.getSizeAnalyze(spaceSizeAnalyzeDto, request);
         return ResultUtils.success(spaceSizeAnalyzeVoList);
     }
 
     @ApiOperation("用户上传行为分析")
     @PostMapping("/user")
-    public BaseResponse<List<SpaceUserAnalyzeVo>> getUserAnalyze(@RequestBody SpaceUserAnalyzeDto spaceUserAnalyzeDto) {
+    public BaseResponse<List<SpaceUserAnalyzeVo>> getUserAnalyze(@RequestBody SpaceUserAnalyzeDto spaceUserAnalyzeDto, HttpServletRequest request) {
         ThrowUtils.throwIf(spaceUserAnalyzeDto == null, ErrorCode.PARAMS_ERROR);
-        List<SpaceUserAnalyzeVo> spaceUserAnalyzeVoList = spaceAnalyzeService.getUserAnalyze(spaceUserAnalyzeDto);
+        List<SpaceUserAnalyzeVo> spaceUserAnalyzeVoList = spaceAnalyzeService.getUserAnalyze(spaceUserAnalyzeDto, request);
         return ResultUtils.success(spaceUserAnalyzeVoList);
     }
 
     @ApiOperation("空间使用排行分析")
     @PreAuthorize(role = UserRoleEnum.ADMIN)
     @PostMapping("/rank")
-    public BaseResponse<List<Space>> getSpaceAnalyze(@RequestBody SpaceRankAnalyzeDto spaceRankAnalyzeDto) {
+    public BaseResponse<List<Space>> getSpaceAnalyze(@RequestBody SpaceRankAnalyzeDto spaceRankAnalyzeDto, HttpServletRequest request) {
         ThrowUtils.throwIf(spaceRankAnalyzeDto == null, ErrorCode.PARAMS_ERROR);
-        List<Space> spaceList = spaceAnalyzeService.getSpaceAnalyze(spaceRankAnalyzeDto);
+        List<Space> spaceList = spaceAnalyzeService.getSpaceAnalyze(spaceRankAnalyzeDto, request);
         return ResultUtils.success(spaceList);
     }
 }

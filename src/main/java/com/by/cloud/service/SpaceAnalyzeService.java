@@ -8,6 +8,7 @@ import com.by.cloud.model.entity.Picture;
 import com.by.cloud.model.entity.Space;
 import com.by.cloud.model.vo.space.analyze.*;
 
+import javax.servlet.http.HttpServletRequest;
 import java.util.List;
 
 /**
@@ -43,47 +44,53 @@ public interface SpaceAnalyzeService extends IService<Space> {
      * 获取空间使用情况分析
      *
      * @param spaceUsageAnalyzeDto 分析参数
+     * @param request              请求对象
      * @return 使用情况
      */
-    SpaceUsageAnalyzeVo getSpaceUsageAnalyze(SpaceUsageAnalyzeDto spaceUsageAnalyzeDto);
+    SpaceUsageAnalyzeVo getSpaceUsageAnalyze(SpaceUsageAnalyzeDto spaceUsageAnalyzeDto, HttpServletRequest request);
 
     /**
      * 获取空间分类情况分析
      *
      * @param spaceCategoryAnalyzeDto 分析参数
+     * @param request                 请求对象
      * @return 分析结果
      */
-    List<SpaceCategoryAnalyzeVo> getCategoryAnalyze(SpaceCategoryAnalyzeDto spaceCategoryAnalyzeDto);
+    List<SpaceCategoryAnalyzeVo> getCategoryAnalyze(SpaceCategoryAnalyzeDto spaceCategoryAnalyzeDto, HttpServletRequest request);
 
     /**
      * 获取空间标签情况分析
      *
      * @param spaceTagAnalyzeDto 分析参数
+     * @param request            请求对象
      * @return 分析结果
      */
-    List<SpaceTagAnalyzeVo> getTagAnalyze(SpaceTagAnalyzeDto spaceTagAnalyzeDto);
+    List<SpaceTagAnalyzeVo> getTagAnalyze(SpaceTagAnalyzeDto spaceTagAnalyzeDto, HttpServletRequest request);
 
     /**
      * 获取空间图片大小情况分析
      *
      * @param spaceSizeAnalyzeDto 分析参数
+     * @param request             请求对象
      * @return 分析结果
      */
-    List<SpaceSizeAnalyzeVo> getSizeAnalyze(SpaceSizeAnalyzeDto spaceSizeAnalyzeDto);
+    List<SpaceSizeAnalyzeVo> getSizeAnalyze(SpaceSizeAnalyzeDto spaceSizeAnalyzeDto, HttpServletRequest request);
 
     /**
      * 获取空间用户上传情况分析
      *
      * @param spaceUserAnalyzeDto 分析参数
+     * @param request             请求对象
      * @return 分析结果
      */
-    List<SpaceUserAnalyzeVo> getUserAnalyze(SpaceUserAnalyzeDto spaceUserAnalyzeDto);
+    List<SpaceUserAnalyzeVo> getUserAnalyze(SpaceUserAnalyzeDto spaceUserAnalyzeDto, HttpServletRequest request);
 
     /**
      * 获取空间排行分析
      *
      * @param spaceRankAnalyzeDto 分析参数
+     * @param request             请求对象
      * @return 分析结果
      */
-    List<Space> getSpaceAnalyze(SpaceRankAnalyzeDto spaceRankAnalyzeDto);
+    List<Space> getSpaceAnalyze(SpaceRankAnalyzeDto spaceRankAnalyzeDto, HttpServletRequest request);
 }

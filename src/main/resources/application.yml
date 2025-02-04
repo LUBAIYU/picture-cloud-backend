@@ -20,6 +20,10 @@ spring:
     host: localhost
     port: 6379
     timeout: 5000
+  session:
+    # 表示从Redis中读写Session
+    store-type: redis     # 默认为none 表示存储在单台服务器
+
   # 文件上传开放更大的体积
   servlet:
     multipart:
@@ -76,13 +80,7 @@ knife4j:
         api-rule: package
         api-rule-resources:
           - com.by.cloud.controller
-# JWT配置
+# 用户密码加密盐值
 user:
-  jwt:
-    secret-key: cloud
-    # 过期时间一天
-    ttl: 86400000
-    token-name: Authorization
-  # 用户密码加密盐值
   encrypt:
     salt: picture_cloud

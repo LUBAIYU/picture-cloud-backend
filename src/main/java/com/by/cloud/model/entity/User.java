@@ -63,19 +63,19 @@ public class User implements Serializable {
     /**
      * 编辑时间
      */
-    @JsonFormat(pattern = "YYYY-MM-dd HH:mm:ss")
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime editTime;
 
     /**
      * 创建时间
      */
-    @JsonFormat(pattern = "YYYY-MM-dd HH:mm:ss")
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime createTime;
 
     /**
      * 更新时间
      */
-    @JsonFormat(pattern = "YYYY-MM-dd HH:mm:ss")
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime updateTime;
 
     /**

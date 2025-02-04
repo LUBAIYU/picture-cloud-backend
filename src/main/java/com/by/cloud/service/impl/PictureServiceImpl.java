@@ -14,7 +14,6 @@ import com.by.cloud.api.aliyunai.model.CreateOutPaintingTaskRequest;
 import com.by.cloud.api.aliyunai.model.CreateOutPaintingTaskResponse;
 import com.by.cloud.api.imagesearch.ImageSearchApiFacade;
 import com.by.cloud.api.imagesearch.model.ImageSearchResult;
-import com.by.cloud.common.BaseContext;
 import com.by.cloud.common.CosManager;
 import com.by.cloud.common.PageResult;
 import com.by.cloud.common.auth.SpaceUserAuthManager;
@@ -57,6 +56,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.util.DigestUtils;
 
+import javax.servlet.http.HttpServletRequest;
 import java.awt.*;
 import java.io.IOException;
 import java.time.Duration;
@@ -100,9 +100,9 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture> impl
             .build();
 
     @Override
-    public PictureVo uploadPicture(Object inputSource, PictureUploadDto dto) {
+    public PictureVo uploadPicture(Object inputSource, PictureUploadDto dto, HttpServletRequest request) {
         // 获取登录用户ID
-        UserVo loginUser = userService.getLoginUser();
+        User loginUser = userService.getLoginUser(request);
         Long loginUserId = loginUser.getUserId();
 
         // 校验空间是否存在
@@ -205,7 +205,7 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture> impl
     }
 
     @Override
-    public PictureVo getPictureVo(Long picId) {
+    public PictureVo getPictureVo(Long picId, HttpServletRequest request) {
         // 判断图片是否存在
         Picture picture = this.getById(picId);
         ThrowUtils.throwIf(picture == null, ErrorCode.NOT_FOUND_ERROR);
@@ -222,8 +222,8 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture> impl
             ThrowUtils.throwIf(space == null, ErrorCode.NOT_FOUND_ERROR, "空间不存在");
         }
         // 获取权限列表
-        Long loginUserId = BaseContext.getLoginUserId();
-        List<String> permissionList = spaceUserAuthManager.getPermissionList(space, loginUserId);
+        User loginUser = userService.getLoginUser(request);
+        List<String> permissionList = spaceUserAuthManager.getPermissionList(space, loginUser.getUserId());
 
         // 获取封装类
         PictureVo pictureVo = PictureVo.objToVo(picture);
@@ -374,7 +374,7 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture> impl
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public boolean updatePicture(PictureUpdateDto updateDto) {
+    public boolean updatePicture(PictureUpdateDto updateDto, HttpServletRequest request) {
         // 校验参数
         Long picId = updateDto.getPicId();
         Long categoryId = updateDto.getCategoryId();
@@ -425,7 +425,7 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture> impl
         ThrowUtils.throwIf(dbPicture == null, ErrorCode.NOT_FOUND_ERROR);
 
         // 填充审核参数
-        this.fillReviewParams(picture, userService.getLoginUser());
+        this.fillReviewParams(picture, userService.getLoginUser(request));
 
         // 更新数据
         boolean updated = this.updateById(picture);
@@ -452,7 +452,7 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture> impl
     }
 
     @Override
-    public void pictureReview(PictureReviewDto reviewDto) {
+    public void pictureReview(PictureReviewDto reviewDto, HttpServletRequest request) {
         // 1.校验参数
         Long id = reviewDto.getId();
         Integer reviewStatus = reviewDto.getReviewStatus();
@@ -472,11 +472,14 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture> impl
         }
 
         // 4.数据库操作
+        // 获取登录用户
+        User loginUser = userService.getLoginUser(request);
+        Long loginUserId = loginUser.getUserId();
+
         Picture updatePicture = new Picture();
         updatePicture.setPicId(id);
         updatePicture.setReviewStatus(reviewStatus);
         updatePicture.setReviewMessage(reviewMessage);
-        Long loginUserId = BaseContext.getLoginUserId();
         updatePicture.setReviewerId(loginUserId);
         updatePicture.setReviewTime(LocalDateTime.now());
         boolean updated = this.updateById(updatePicture);
@@ -484,7 +487,7 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture> impl
     }
 
     @Override
-    public void fillReviewParams(Picture picture, UserVo loginUser) {
+    public void fillReviewParams(Picture picture, User loginUser) {
         // 如果是管理员则自动过审
         if (userService.isAdmin(loginUser)) {
             picture.setReviewStatus(PictureReviewStatusEnum.PASS.getValue());
@@ -498,7 +501,7 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture> impl
     }
 
     @Override
-    public int uploadPictureByBatch(PictureBatchDto batchDto) {
+    public int uploadPictureByBatch(PictureBatchDto batchDto, HttpServletRequest request) {
         // 校验参数
         String searchText = batchDto.getSearchText();
         Integer count = batchDto.getCount();
@@ -546,7 +549,7 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture> impl
             PictureUploadDto uploadDto = new PictureUploadDto();
             uploadDto.setPicName(namePrefix + (uploadCount + 1));
             try {
-                PictureVo pictureVo = this.uploadPicture(fileUrl, uploadDto);
+                PictureVo pictureVo = this.uploadPicture(fileUrl, uploadDto, request);
                 log.info("图片上传成功，id = {}", pictureVo.getPicId());
                 uploadCount++;
             } catch (Exception e) {
@@ -692,9 +695,10 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture> impl
     }
 
     @Override
-    public void checkPictureAuth(Picture picture) {
+    public void checkPictureAuth(Picture picture, HttpServletRequest request) {
         ThrowUtils.throwIf(picture == null, ErrorCode.PARAMS_ERROR);
-        Long loginUserId = BaseContext.getLoginUserId();
+        User loginUser = userService.getLoginUser(request);
+        Long loginUserId = loginUser.getUserId();
         Long spaceId = picture.getSpaceId();
         if (spaceId == null) {
             // 公共图库，仅本人或管理员可操作
@@ -724,7 +728,7 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture> impl
     }
 
     @Override
-    public List<PictureVo> searchPictureByColor(Long spaceId, String hexColor) {
+    public List<PictureVo> searchPictureByColor(Long spaceId, String hexColor, HttpServletRequest request) {
         // 校验参数
         ThrowUtils.throwIf(spaceId == null || spaceId <= 0, ErrorCode.PARAMS_ERROR);
         ThrowUtils.throwIf(StrUtil.isBlank(hexColor), ErrorCode.PARAMS_ERROR);
@@ -732,7 +736,8 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture> impl
         // 校验空间权限
         Space space = spaceService.getById(spaceId);
         ThrowUtils.throwIf(space == null, ErrorCode.NOT_FOUND_ERROR, "空间不存在");
-        Long loginUserId = BaseContext.getLoginUserId();
+        User loginUser = userService.getLoginUser(request);
+        Long loginUserId = loginUser.getUserId();
         if (!loginUserId.equals(space.getUserId())) {
             throw new BusinessException(ErrorCode.NO_AUTH_ERROR, "无该空间访问权限");
         }
@@ -768,7 +773,7 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture> impl
     }
 
     @Override
-    public void editPictureByBatch(PictureEditByBatchDto editByBatchDto) {
+    public void editPictureByBatch(PictureEditByBatchDto editByBatchDto, HttpServletRequest request) {
         // 校验参数
         List<Long> pictureIdList = editByBatchDto.getPictureIdList();
         Long spaceId = editByBatchDto.getSpaceId();
@@ -780,7 +785,8 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture> impl
         // 校验空间权限
         Space space = spaceService.getById(spaceId);
         ThrowUtils.throwIf(space == null, ErrorCode.NOT_FOUND_ERROR);
-        Long loginUserId = BaseContext.getLoginUserId();
+        User loginUser = userService.getLoginUser(request);
+        Long loginUserId = loginUser.getUserId();
         if (!loginUserId.equals(space.getUserId())) {
             throw new BusinessException(ErrorCode.NO_AUTH_ERROR, "无该空间访问权限");
         }

@@ -2,7 +2,6 @@ package com.by.cloud.controller;
 
 import cn.hutool.core.util.ObjectUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.by.cloud.common.BaseContext;
 import com.by.cloud.common.BaseResponse;
 import com.by.cloud.common.auth.annotation.SaSpaceCheckPermission;
 import com.by.cloud.constants.SpaceUserPermissionConstant;
@@ -13,6 +12,7 @@ import com.by.cloud.model.dto.spaceuser.SpaceUserQueryDto;
 import com.by.cloud.model.entity.SpaceUser;
 import com.by.cloud.model.vo.spaceuser.SpaceUserVo;
 import com.by.cloud.service.SpaceUserService;
+import com.by.cloud.service.UserService;
 import com.by.cloud.utils.ResultUtils;
 import com.by.cloud.utils.ThrowUtils;
 import io.swagger.annotations.Api;
@@ -20,6 +20,7 @@ import io.swagger.annotations.ApiOperation;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
+import javax.servlet.http.HttpServletRequest;
 import java.util.List;
 
 /**
@@ -29,6 +30,9 @@ import java.util.List;
 @RequestMapping("/spaceUser")
 @Api(tags = "空间用户关联模块")
 public class SpaceUserController {
+
+    @Resource
+    private UserService userService;
 
     @Resource
     private SpaceUserService spaceUserService;
@@ -88,8 +92,8 @@ public class SpaceUserController {
 
     @ApiOperation("查询我加入的团队空间列表")
     @GetMapping("/list/my")
-    public BaseResponse<List<SpaceUserVo>> listMyTeamSpace() {
-        Long loginUserId = BaseContext.getLoginUserId();
+    public BaseResponse<List<SpaceUserVo>> listMyTeamSpace(HttpServletRequest request) {
+        Long loginUserId = userService.getLoginUserId(request);
         SpaceUserQueryDto queryDto = new SpaceUserQueryDto();
         queryDto.setUserId(loginUserId);
         List<SpaceUserVo> spaceUserVoList = spaceUserService.querySpaceVoList(queryDto);

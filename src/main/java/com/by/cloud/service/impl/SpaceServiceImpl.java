@@ -7,7 +7,6 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.by.cloud.common.BaseContext;
 import com.by.cloud.common.PageResult;
 import com.by.cloud.common.auth.SpaceUserAuthManager;
 import com.by.cloud.constants.SpaceConstant;
@@ -34,6 +33,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import javax.annotation.Resource;
+import javax.servlet.http.HttpServletRequest;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -110,12 +110,13 @@ public class SpaceServiceImpl extends ServiceImpl<SpaceMapper, Space> implements
     }
 
     @Override
-    public void deleteById(Long id) {
+    public void deleteById(Long id, HttpServletRequest request) {
         // 判断空间是否存在
         Space space = this.getById(id);
         ThrowUtils.throwIf(space == null, ErrorCode.NOT_FOUND_ERROR);
         // 判断登录用户是否有权限删除
-        Long loginUserId = BaseContext.getLoginUserId();
+        User loginUser = userService.getLoginUser(request);
+        Long loginUserId = loginUser.getUserId();
         checkSpaceAuth(space, loginUserId);
         // 删除
         boolean removed = this.removeById(id);
@@ -123,7 +124,7 @@ public class SpaceServiceImpl extends ServiceImpl<SpaceMapper, Space> implements
     }
 
     @Override
-    public void editSpaceById(SpaceEditDto editDto) {
+    public void editSpaceById(SpaceEditDto editDto, HttpServletRequest request) {
         // 校验参数
         Long id = editDto.getId();
         if (id == null || id <= 0) {
@@ -138,7 +139,8 @@ public class SpaceServiceImpl extends ServiceImpl<SpaceMapper, Space> implements
         ThrowUtils.throwIf(dbSpace == null, ErrorCode.NOT_FOUND_ERROR);
 
         // 判断权限，仅空间创建人可编辑
-        Long loginUserId = BaseContext.getLoginUserId();
+        User loginUser = userService.getLoginUser(request);
+        Long loginUserId = loginUser.getUserId();
         if (!loginUserId.equals(dbSpace.getUserId())) {
             throw new BusinessException(ErrorCode.NO_AUTH_ERROR);
         }
@@ -169,13 +171,14 @@ public class SpaceServiceImpl extends ServiceImpl<SpaceMapper, Space> implements
     }
 
     @Override
-    public SpaceVo getSpaceVoById(Long id) {
+    public SpaceVo getSpaceVoById(Long id, HttpServletRequest request) {
         // 判断是否存在
         Space space = this.getById(id);
         ThrowUtils.throwIf(space == null, ErrorCode.NOT_FOUND_ERROR);
 
         // 判断是否有权限
-        Long loginUserId = BaseContext.getLoginUserId();
+        User loginUser = userService.getLoginUser(request);
+        Long loginUserId = loginUser.getUserId();
         checkSpaceAuth(space, loginUserId);
 
         // 获取创建的用户信息
@@ -260,7 +263,7 @@ public class SpaceServiceImpl extends ServiceImpl<SpaceMapper, Space> implements
     }
 
     @Override
-    public long createSpace(SpaceCreateDto addDto) {
+    public long createSpace(SpaceCreateDto addDto, HttpServletRequest request) {
         // 1.填充默认参数
         Space space = new Space();
         BeanUtil.copyProperties(addDto, space);
@@ -279,7 +282,8 @@ public class SpaceServiceImpl extends ServiceImpl<SpaceMapper, Space> implements
         // 2.校验参数
         this.validSpace(space, true);
         // 3.校验权限，非管理员只能创建普通级别的空间
-        Long loginUserId = BaseContext.getLoginUserId();
+        User loginUser = userService.getLoginUser(request);
+        Long loginUserId = loginUser.getUserId();
         space.setUserId(loginUserId);
         if (SpaceLevelEnum.COMMON.getValue() != space.getSpaceLevel() && !userService.isAdmin(loginUserId)) {
             throw new BusinessException(ErrorCode.NO_AUTH_ERROR, "无权限创建指定级别的空间");

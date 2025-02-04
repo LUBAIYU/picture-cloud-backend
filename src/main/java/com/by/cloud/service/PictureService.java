@@ -6,10 +6,11 @@ import com.by.cloud.api.imagesearch.model.ImageSearchResult;
 import com.by.cloud.common.PageResult;
 import com.by.cloud.model.dto.picture.*;
 import com.by.cloud.model.entity.Picture;
+import com.by.cloud.model.entity.User;
 import com.by.cloud.model.vo.picture.PictureTagCategoryVo;
 import com.by.cloud.model.vo.picture.PictureVo;
-import com.by.cloud.model.vo.user.UserVo;
 
+import javax.servlet.http.HttpServletRequest;
 import java.util.List;
 
 /**
@@ -22,17 +23,19 @@ public interface PictureService extends IService<Picture> {
      *
      * @param inputSource 文件输入源
      * @param dto         请求数据
+     * @param request     请求对象
      * @return 图片信息
      */
-    PictureVo uploadPicture(Object inputSource, PictureUploadDto dto);
+    PictureVo uploadPicture(Object inputSource, PictureUploadDto dto, HttpServletRequest request);
 
     /**
      * 根据ID获取图片包装类
      *
-     * @param picId 图片ID
+     * @param picId   图片ID
+     * @param request 请求对象
      * @return 图片包装类
      */
-    PictureVo getPictureVo(Long picId);
+    PictureVo getPictureVo(Long picId, HttpServletRequest request);
 
     /**
      * 分页查询图片（仅管理员）
@@ -54,9 +57,10 @@ public interface PictureService extends IService<Picture> {
      * 更新图片信息
      *
      * @param updateDto 图片信息请求体
+     * @param request   请求对象
      * @return 是否更新成功
      */
-    boolean updatePicture(PictureUpdateDto updateDto);
+    boolean updatePicture(PictureUpdateDto updateDto, HttpServletRequest request);
 
     /**
      * 校验图片
@@ -70,8 +74,9 @@ public interface PictureService extends IService<Picture> {
      * 图片审核（仅管理员）
      *
      * @param reviewDto 审核参数
+     * @param request   请求对象
      */
-    void pictureReview(PictureReviewDto reviewDto);
+    void pictureReview(PictureReviewDto reviewDto, HttpServletRequest request);
 
     /**
      * 填充审核参数
@@ -79,15 +84,16 @@ public interface PictureService extends IService<Picture> {
      * @param picture   图片信息
      * @param loginUser 登录用户
      */
-    void fillReviewParams(Picture picture, UserVo loginUser);
+    void fillReviewParams(Picture picture, User loginUser);
 
     /**
      * 批量抓取并上传图片
      *
      * @param batchDto 请求参数
+     * @param request  请求对象
      * @return 上传成功的图片数量
      */
-    int uploadPictureByBatch(PictureBatchDto batchDto);
+    int uploadPictureByBatch(PictureBatchDto batchDto, HttpServletRequest request);
 
     /**
      * 分页查询图片（封装类），有缓存
@@ -122,8 +128,9 @@ public interface PictureService extends IService<Picture> {
      * 校验图片权限
      *
      * @param picture 图片
+     * @param request 请求对象
      */
-    void checkPictureAuth(Picture picture);
+    void checkPictureAuth(Picture picture, HttpServletRequest request);
 
     /**
      * 以图搜图
@@ -138,16 +145,18 @@ public interface PictureService extends IService<Picture> {
      *
      * @param spaceId  空间ID
      * @param hexColor 目标颜色（16进制）
+     * @param request  请求对象
      * @return 图片列表
      */
-    List<PictureVo> searchPictureByColor(Long spaceId, String hexColor);
+    List<PictureVo> searchPictureByColor(Long spaceId, String hexColor, HttpServletRequest request);
 
     /**
      * 批量修改图片信息
      *
      * @param editByBatchDto 请求体
+     * @param request        请求对象
      */
-    void editPictureByBatch(PictureEditByBatchDto editByBatchDto);
+    void editPictureByBatch(PictureEditByBatchDto editByBatchDto, HttpServletRequest request);
 
     /**
      * 创建扩图任务

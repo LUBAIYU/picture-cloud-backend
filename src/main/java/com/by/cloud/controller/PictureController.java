@@ -19,7 +19,6 @@ import com.by.cloud.model.entity.Picture;
 import com.by.cloud.model.vo.picture.PictureTagCategoryVo;
 import com.by.cloud.model.vo.picture.PictureVo;
 import com.by.cloud.service.PictureService;
-import com.by.cloud.service.SpaceService;
 import com.by.cloud.utils.ResultUtils;
 import com.by.cloud.utils.ThrowUtils;
 import io.swagger.annotations.Api;
@@ -29,6 +28,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.annotation.Resource;
+import javax.servlet.http.HttpServletRequest;
 import java.util.List;
 
 /**
@@ -44,28 +44,25 @@ public class PictureController {
     private PictureService pictureService;
 
     @Resource
-    private SpaceService spaceService;
-
-    @Resource
     private AliYunAiApi aliYunAiApi;
 
     @ApiOperation("上传图片")
     @PostMapping("/upload")
     @SaSpaceCheckPermission(value = SpaceUserPermissionConstant.PICTURE_UPLOAD)
     public BaseResponse<PictureVo> uploadPicture(@RequestPart("file") MultipartFile multipartFile,
-                                                 PictureUploadDto dto) {
+                                                 PictureUploadDto dto, HttpServletRequest request) {
         ThrowUtils.throwIf(multipartFile == null, ErrorCode.PARAMS_ERROR);
-        PictureVo pictureVo = pictureService.uploadPicture(multipartFile, dto);
+        PictureVo pictureVo = pictureService.uploadPicture(multipartFile, dto, request);
         return ResultUtils.success(pictureVo);
     }
 
     @ApiOperation("通过 URL 上传图片")
     @PostMapping("/url/upload")
     @SaSpaceCheckPermission(value = SpaceUserPermissionConstant.PICTURE_UPLOAD)
-    public BaseResponse<PictureVo> uploadPictureByUrl(@RequestBody PictureUploadDto dto) {
+    public BaseResponse<PictureVo> uploadPictureByUrl(@RequestBody PictureUploadDto dto, HttpServletRequest request) {
         ThrowUtils.throwIf(dto == null, ErrorCode.PARAMS_ERROR);
         String fileUrl = dto.getFileUrl();
-        PictureVo pictureVo = pictureService.uploadPicture(fileUrl, dto);
+        PictureVo pictureVo = pictureService.uploadPicture(fileUrl, dto, request);
         return ResultUtils.success(pictureVo);
     }
 
@@ -80,9 +77,9 @@ public class PictureController {
 
     @ApiOperation("根据ID获取图片（封装类）")
     @GetMapping("/vo/get")
-    public BaseResponse<PictureVo> getPictureVoById(@RequestParam("picId") Long picId) {
+    public BaseResponse<PictureVo> getPictureVoById(@RequestParam("picId") Long picId, HttpServletRequest request) {
         ThrowUtils.throwIf(picId == null || picId <= 0, ErrorCode.PARAMS_ERROR);
-        PictureVo pictureVo = pictureService.getPictureVo(picId);
+        PictureVo pictureVo = pictureService.getPictureVo(picId, request);
         return ResultUtils.success(pictureVo);
     }
 
@@ -151,9 +148,9 @@ public class PictureController {
     @ApiOperation("更新图片信息")
     @PutMapping("/update")
     @SaSpaceCheckPermission(value = SpaceUserPermissionConstant.PICTURE_EDIT)
-    public BaseResponse<Boolean> updatePicture(@RequestBody PictureUpdateDto updateDto) {
+    public BaseResponse<Boolean> updatePicture(@RequestBody PictureUpdateDto updateDto, HttpServletRequest request) {
         ThrowUtils.throwIf(updateDto == null, ErrorCode.PARAMS_ERROR);
-        boolean isSuccess = pictureService.updatePicture(updateDto);
+        boolean isSuccess = pictureService.updatePicture(updateDto, request);
         return ResultUtils.success(isSuccess);
     }
 
@@ -167,18 +164,18 @@ public class PictureController {
     @ApiOperation("图片审核")
     @PreAuthorize(role = UserRoleEnum.ADMIN)
     @PostMapping("/review")
-    public BaseResponse<Boolean> doPictureReview(@RequestBody PictureReviewDto reviewDto) {
+    public BaseResponse<Boolean> doPictureReview(@RequestBody PictureReviewDto reviewDto, HttpServletRequest request) {
         ThrowUtils.throwIf(reviewDto == null, ErrorCode.PARAMS_ERROR);
-        pictureService.pictureReview(reviewDto);
+        pictureService.pictureReview(reviewDto, request);
         return ResultUtils.success(true);
     }
 
     @ApiOperation("批量抓取并上传图片")
     @PreAuthorize(role = UserRoleEnum.ADMIN)
     @PostMapping("/batch/upload")
-    public BaseResponse<Integer> uploadPictureByBatch(@RequestBody PictureBatchDto batchDto) {
+    public BaseResponse<Integer> uploadPictureByBatch(@RequestBody PictureBatchDto batchDto, HttpServletRequest request) {
         ThrowUtils.throwIf(batchDto == null, ErrorCode.PARAMS_ERROR);
-        int uploadCount = pictureService.uploadPictureByBatch(batchDto);
+        int uploadCount = pictureService.uploadPictureByBatch(batchDto, request);
         return ResultUtils.success(uploadCount);
     }
 
@@ -193,20 +190,20 @@ public class PictureController {
     @ApiOperation("根据颜色搜索图片")
     @PostMapping("/search/byColor")
     @SaSpaceCheckPermission(value = SpaceUserPermissionConstant.PICTURE_VIEW)
-    public BaseResponse<List<PictureVo>> searchPictureByColor(@RequestBody PictureSearchByColorDto searchByColorDto) {
+    public BaseResponse<List<PictureVo>> searchPictureByColor(@RequestBody PictureSearchByColorDto searchByColorDto, HttpServletRequest request) {
         ThrowUtils.throwIf(searchByColorDto == null, ErrorCode.PARAMS_ERROR);
         Long spaceId = searchByColorDto.getSpaceId();
         String picColor = searchByColorDto.getPicColor();
-        List<PictureVo> resultList = pictureService.searchPictureByColor(spaceId, picColor);
+        List<PictureVo> resultList = pictureService.searchPictureByColor(spaceId, picColor, request);
         return ResultUtils.success(resultList);
     }
 
     @ApiOperation("批量更新图片信息")
     @PutMapping("/edit/byBatch")
     @SaSpaceCheckPermission(value = SpaceUserPermissionConstant.PICTURE_EDIT)
-    public BaseResponse<Boolean> editPictureByBatch(@RequestBody PictureEditByBatchDto pictureEditByBatchDto) {
+    public BaseResponse<Boolean> editPictureByBatch(@RequestBody PictureEditByBatchDto pictureEditByBatchDto, HttpServletRequest request) {
         ThrowUtils.throwIf(pictureEditByBatchDto == null, ErrorCode.PARAMS_ERROR);
-        pictureService.editPictureByBatch(pictureEditByBatchDto);
+        pictureService.editPictureByBatch(pictureEditByBatchDto, request);
         return ResultUtils.success(true);
     }
 

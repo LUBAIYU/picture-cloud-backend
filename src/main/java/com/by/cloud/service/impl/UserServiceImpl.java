@@ -8,9 +8,7 @@ import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.by.cloud.common.BaseContext;
 import com.by.cloud.common.FileManager;
-import com.by.cloud.common.JwtProperties;
 import com.by.cloud.common.PageResult;
 import com.by.cloud.common.auth.StpKit;
 import com.by.cloud.constants.UserConstant;
@@ -24,10 +22,8 @@ import com.by.cloud.model.dto.user.UserPageDto;
 import com.by.cloud.model.dto.user.UserRegisterDto;
 import com.by.cloud.model.dto.user.UserUpdateDto;
 import com.by.cloud.model.entity.User;
-import com.by.cloud.model.vo.user.UserLoginVo;
 import com.by.cloud.model.vo.user.UserVo;
 import com.by.cloud.service.UserService;
-import com.by.cloud.utils.JwtUtils;
 import com.by.cloud.utils.ThrowUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
@@ -36,10 +32,9 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.annotation.Resource;
+import javax.servlet.http.HttpServletRequest;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 /**
  * @author lzh
@@ -51,20 +46,20 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     private String salt;
 
     @Resource
-    private JwtProperties jwtProperties;
-
-    @Resource
     private FileManager fileManager;
 
     @Override
-    public UserVo getLoginUser() {
-        // 从本地线程取出ID
-        Long loginUserId = BaseContext.getLoginUserId();
-        if (loginUserId == null) {
-            throw new BusinessException(ErrorCode.NOT_LOGIN_ERROR);
-        }
-        User user = this.getById(loginUserId);
-        return BeanUtil.copyProperties(user, UserVo.class);
+    public User getLoginUser(HttpServletRequest request) {
+        Object object = request.getSession().getAttribute(UserConstant.USER_LOGIN_STATE);
+        User user = (User) object;
+        ThrowUtils.throwIf(user == null, ErrorCode.NOT_LOGIN_ERROR);
+        return user;
+    }
+
+    @Override
+    public Long getLoginUserId(HttpServletRequest request) {
+        User loginUser = getLoginUser(request);
+        return loginUser.getUserId();
     }
 
     @Override
@@ -99,7 +94,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     }
 
     @Override
-    public UserLoginVo userLogin(UserLoginDto dto) {
+    public UserVo userLogin(UserLoginDto dto, HttpServletRequest request) {
         // 请求参数
         String userAccount = dto.getUserAccount();
         String userPassword = dto.getUserPassword();
@@ -111,38 +106,32 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         checkPassword(userPassword, null);
 
         // 校验账号和密码
-        User dbUser = this.lambdaQuery().eq(User::getUserAccount, userAccount).one();
-        ThrowUtils.throwIf(dbUser == null, ErrorCode.PARAMS_ERROR, "账号或密码错误");
-        if (!dbUser.getUserPassword().equals(encryptPassword)) {
+        User user = this.lambdaQuery().eq(User::getUserAccount, userAccount).one();
+        ThrowUtils.throwIf(user == null, ErrorCode.PARAMS_ERROR, "账号或密码错误");
+        if (!user.getUserPassword().equals(encryptPassword)) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "账号或密码错误");
         }
 
         // 判断用户是否被冻结
-        UserStatusEnum statusEnum = UserStatusEnum.getEnumByValue(dbUser.getUserStatus());
+        UserStatusEnum statusEnum = UserStatusEnum.getEnumByValue(user.getUserStatus());
         if (UserStatusEnum.DISABLE.equals(statusEnum)) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "账号被冻结，请联系管理员");
         }
 
-        // 创建令牌，并将用户ID存储到令牌中
-        Map<String, Object> claims = new HashMap<>(3);
-        Long userId = dbUser.getUserId();
-        claims.put(UserConstant.USER_ID, userId);
-        String token = JwtUtils.createJwt(jwtProperties.getSecretKey(), jwtProperties.getTtl(), claims);
-        UserLoginVo loginVo = new UserLoginVo();
-        loginVo.setToken(token);
+        // 保存用户的登录态
+        request.getSession().setAttribute(UserConstant.USER_LOGIN_STATE, user);
 
         // 保存用户登录态到 Sa-Token
-        StpKit.SPACE.login(userId);
-        User user = this.getById(userId);
+        StpKit.SPACE.login(user.getUserId());
         StpKit.SPACE.getSession().set(UserConstant.USER_LOGIN_STATE, user);
 
-        return loginVo;
+        return BeanUtil.copyProperties(user, UserVo.class);
     }
 
     @Override
-    public String uploadAvatar(MultipartFile multipartFile) {
+    public String uploadAvatar(MultipartFile multipartFile, HttpServletRequest request) {
         // 获取登录用户
-        UserVo loginUser = this.getLoginUser();
+        User loginUser = this.getLoginUser(request);
         // 构造地址前缀
         String uploadPathPrefix = String.format("avatar/%s", loginUser.getUserId());
         // 上传图片
@@ -151,9 +140,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
     @Override
     @Transactional(rollbackFor = BusinessException.class)
-    public boolean deleteBatchByIds(List<Long> ids) {
+    public boolean deleteBatchByIds(List<Long> ids, HttpServletRequest request) {
         // 获取登录用户
-        UserVo loginUser = this.getLoginUser();
+        User loginUser = this.getLoginUser(request);
         // 如果ID中包含登录用户的ID，则不能删除
         if (ids.contains(loginUser.getUserId())) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "不能删除当前登录用户");
@@ -162,7 +151,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     }
 
     @Override
-    public boolean updateUserById(UserUpdateDto updateDto) {
+    public boolean updateUserById(UserUpdateDto updateDto, HttpServletRequest request) {
         // 校验参数
         Long userId = updateDto.getUserId();
         ThrowUtils.throwIf(userId == null, ErrorCode.PARAMS_ERROR, "用户ID不能为空");
@@ -174,7 +163,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         }
 
         // 获取登录用户
-        UserVo loginUser = this.getLoginUser();
+        User loginUser = this.getLoginUser(request);
 
         // 如果当前登录用户是普通用户，则不能修改角色
         UserRoleEnum roleEnum = UserRoleEnum.getEnumByValue(loginUser.getUserRole());
@@ -223,9 +212,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     }
 
     @Override
-    public boolean freezeUsersByIds(List<Long> ids) {
+    public boolean freezeUsersByIds(List<Long> ids, HttpServletRequest request) {
         // 当前登录用户不能冻结
-        UserVo loginUser = this.getLoginUser();
+        User loginUser = this.getLoginUser(request);
         if (ids.contains(loginUser.getUserId())) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "不能冻结当前登录用户");
         }
@@ -289,9 +278,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     }
 
     @Override
-    public boolean isAdmin(UserVo userVo) {
-        ThrowUtils.throwIf(userVo == null, ErrorCode.NOT_FOUND_ERROR);
-        Integer userRole = userVo.getUserRole();
+    public boolean isAdmin(User user) {
+        ThrowUtils.throwIf(user == null, ErrorCode.NOT_FOUND_ERROR);
+        Integer userRole = user.getUserRole();
         UserRoleEnum roleEnum = UserRoleEnum.getEnumByValue(userRole);
         return UserRoleEnum.ADMIN.equals(roleEnum);
     }

@@ -21,6 +21,7 @@ import io.swagger.annotations.ApiOperation;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
+import javax.servlet.http.HttpServletRequest;
 import java.util.Arrays;
 import java.util.List;
 
@@ -37,17 +38,17 @@ public class SpaceController {
 
     @ApiOperation("删除空间信息")
     @DeleteMapping("/delete/{id}")
-    public BaseResponse<Boolean> deleteSpaceById(@PathVariable Long id) {
+    public BaseResponse<Boolean> deleteSpaceById(@PathVariable Long id, HttpServletRequest request) {
         ThrowUtils.throwIf(id == null || id <= 0, ErrorCode.PARAMS_ERROR);
-        spaceService.deleteById(id);
+        spaceService.deleteById(id, request);
         return ResultUtils.success(true);
     }
 
     @ApiOperation("编辑空间信息")
     @PutMapping("/edit")
-    public BaseResponse<Boolean> editSpaceById(@RequestBody SpaceEditDto editDto) {
+    public BaseResponse<Boolean> editSpaceById(@RequestBody SpaceEditDto editDto, HttpServletRequest request) {
         ThrowUtils.throwIf(editDto == null, ErrorCode.PARAMS_ERROR);
-        spaceService.editSpaceById(editDto);
+        spaceService.editSpaceById(editDto, request);
         return ResultUtils.success(true);
     }
 
@@ -71,9 +72,9 @@ public class SpaceController {
 
     @ApiOperation("根据ID获取空间（封装类）")
     @GetMapping("/vo/get")
-    public BaseResponse<SpaceVo> getSpaceVoById(@RequestParam("id") Long id) {
+    public BaseResponse<SpaceVo> getSpaceVoById(@RequestParam("id") Long id, HttpServletRequest request) {
         ThrowUtils.throwIf(id == null || id <= 0, ErrorCode.PARAMS_ERROR);
-        SpaceVo spaceVo = spaceService.getSpaceVoById(id);
+        SpaceVo spaceVo = spaceService.getSpaceVoById(id, request);
         return ResultUtils.success(spaceVo);
     }
 
@@ -99,9 +100,9 @@ public class SpaceController {
 
     @ApiOperation("创建空间")
     @PostMapping("/create")
-    public BaseResponse<Long> createSpace(@RequestBody SpaceCreateDto createDto) {
+    public BaseResponse<Long> createSpace(@RequestBody SpaceCreateDto createDto, HttpServletRequest request) {
         ThrowUtils.throwIf(createDto == null, ErrorCode.PARAMS_ERROR);
-        long id = spaceService.createSpace(createDto);
+        long id = spaceService.createSpace(createDto, request);
         return ResultUtils.success(id);
     }
 
