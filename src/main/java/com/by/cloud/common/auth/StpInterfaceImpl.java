@@ -87,7 +87,7 @@ public class StpInterfaceImpl implements StpInterface {
         // 校验用户是否登录
         User loginUser = (User) StpKit.SPACE.getSessionByLoginId(loginId).get(UserConstant.USER_LOGIN_STATE);
         if (ObjectUtil.isNull(loginUser)) {
-            throw new BusinessException(ErrorCode.NOT_LOGIN_ERROR);
+            throw new BusinessException(ErrorCode.NO_AUTH_ERROR, "用户未登录");
         }
 
         // 判断是否有 SpaceUser 对象，如果有直接根据角色获取权限

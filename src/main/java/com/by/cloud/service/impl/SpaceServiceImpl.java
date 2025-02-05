@@ -10,6 +10,7 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.by.cloud.common.PageResult;
 import com.by.cloud.common.auth.SpaceUserAuthManager;
 import com.by.cloud.constants.SpaceConstant;
+import com.by.cloud.constants.SpaceUserPermissionConstant;
 import com.by.cloud.enums.ErrorCode;
 import com.by.cloud.enums.SpaceLevelEnum;
 import com.by.cloud.enums.SpaceRoleEnum;
@@ -117,7 +118,7 @@ public class SpaceServiceImpl extends ServiceImpl<SpaceMapper, Space> implements
         // 判断登录用户是否有权限删除
         User loginUser = userService.getLoginUser(request);
         Long loginUserId = loginUser.getUserId();
-        checkSpaceAuth(space, loginUserId);
+        checkSpaceAuth(space, loginUserId, false);
         // 删除
         boolean removed = this.removeById(id);
         ThrowUtils.throwIf(!removed, ErrorCode.OPERATION_ERROR);
@@ -179,7 +180,7 @@ public class SpaceServiceImpl extends ServiceImpl<SpaceMapper, Space> implements
         // 判断是否有权限
         User loginUser = userService.getLoginUser(request);
         Long loginUserId = loginUser.getUserId();
-        checkSpaceAuth(space, loginUserId);
+        checkSpaceAuth(space, loginUserId, true);
 
         // 获取创建的用户信息
         User user = userService.getById(space.getUserId());
@@ -322,9 +323,39 @@ public class SpaceServiceImpl extends ServiceImpl<SpaceMapper, Space> implements
     }
 
     @Override
-    public void checkSpaceAuth(Space space, Long loginUserId) {
-        if (!loginUserId.equals(space.getUserId()) && !userService.isAdmin(loginUserId)) {
-            throw new BusinessException(ErrorCode.NO_AUTH_ERROR);
+    public void checkSpaceAuth(Space space, Long loginUserId, boolean isView) {
+        // 区分空间类型，根据空间类型进行鉴权
+        Integer spaceType = space.getSpaceType();
+        if (spaceType == SpaceTypeEnum.PRIVATE.getValue()) {
+            // 私有空间，仅创建者或管理员可访问
+            if (!space.getUserId().equals(loginUserId) && !userService.isAdmin(loginUserId)) {
+                throw new BusinessException(ErrorCode.NO_AUTH_ERROR);
+            }
+        } else {
+            // 团队空间，根据用户角色进行鉴权
+            SpaceUser spaceUser = spaceUserService.lambdaQuery()
+                    .eq(SpaceUser::getUserId, loginUserId)
+                    .eq(SpaceUser::getSpaceId, space.getId())
+                    .one();
+            if (spaceUser == null) {
+                throw new BusinessException(ErrorCode.NO_AUTH_ERROR);
+            }
+            // 获取权限列表
+            List<String> permissionList = spaceUserAuthManager.getPermissionsByRole(spaceUser.getSpaceRole());
+            if (CollUtil.isEmpty(permissionList)) {
+                return;
+            }
+            // 如果是查看，则判断是否有查询权限
+            if (isView) {
+                if (!permissionList.contains(SpaceUserPermissionConstant.PICTURE_VIEW)) {
+                    throw new BusinessException(ErrorCode.NO_AUTH_ERROR);
+                }
+            } else {
+                // 如果是其他空间操作，则需要管理员权限
+                if (!permissionList.contains(SpaceUserPermissionConstant.SPACE_USER_MANAGE)) {
+                    throw new BusinessException(ErrorCode.NO_AUTH_ERROR);
+                }
+            }
         }
     }
 }

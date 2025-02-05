@@ -93,6 +93,7 @@ public interface SpaceService extends IService<Space> {
      *
      * @param space       空间
      * @param loginUserId 登录用户ID
+     * @param isView      是否为查询操作
      */
-    void checkSpaceAuth(Space space, Long loginUserId);
+    void checkSpaceAuth(Space space, Long loginUserId, boolean isView);
 }

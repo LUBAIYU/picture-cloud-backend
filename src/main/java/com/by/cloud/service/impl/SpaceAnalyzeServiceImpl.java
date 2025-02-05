@@ -67,7 +67,7 @@ public class SpaceAnalyzeServiceImpl extends ServiceImpl<SpaceMapper, Space> imp
         }
         Space space = Optional.ofNullable(this.getById(spaceId))
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND_ERROR));
-        spaceService.checkSpaceAuth(space, loginUserId);
+        spaceService.checkSpaceAuth(space, loginUserId, true);
     }
 
     @Override
