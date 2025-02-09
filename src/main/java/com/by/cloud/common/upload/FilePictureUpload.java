@@ -21,7 +21,7 @@ public class FilePictureUpload extends BasePictureUploadTemplate {
     protected void validateFile(Object inputSource) {
         MultipartFile multipartFile = (MultipartFile) inputSource;
         ThrowUtils.throwIf(multipartFile == null, ErrorCode.PARAMS_ERROR, "文件不能为空");
-        // 校验大小(限制最大为 2MB)
+        // 校验大小(限制最大为 10MB)
         long fileSize = multipartFile.getSize();
         ThrowUtils.throwIf(fileSize > PictureConstant.MAX_FILE_SIZE, ErrorCode.PARAMS_ERROR, "文件大小不能超过 2MB");
         // 校验后缀

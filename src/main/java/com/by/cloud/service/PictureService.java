@@ -165,4 +165,27 @@ public interface PictureService extends IService<Picture> {
      * @return 扩图结果
      */
     CreateOutPaintingTaskResponse createOutPaintingTask(PictureCreateOutPaintingTaskDto createOutPaintingTaskDto);
+
+    /**
+     * 刷新指定缓存
+     *
+     * @param pageDto 查询参数
+     */
+    void refreshCache(PicturePageDto pageDto);
+
+    /**
+     * 获取 Redis 中的缓存 Key
+     *
+     * @param prefix 前缀
+     * @return 缓存 Key 列表
+     */
+    List<String> getAllCacheKeys(String prefix);
+
+    /**
+     * 删除指定缓存
+     *
+     * @param hashKey 缓存Key
+     * @return 是否删除成功
+     */
+    boolean removeCacheByKey(String hashKey);
 }

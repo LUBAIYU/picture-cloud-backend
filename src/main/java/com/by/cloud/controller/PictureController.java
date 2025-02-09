@@ -223,4 +223,30 @@ public class PictureController {
         GetOutPaintingTaskResponse task = aliYunAiApi.getOutPaintingTask(taskId);
         return ResultUtils.success(task);
     }
+
+    @ApiOperation("刷新指定缓存")
+    @PreAuthorize(role = UserRoleEnum.ADMIN)
+    @PostMapping("/cache/refresh")
+    public BaseResponse<Boolean> refreshCache(@RequestBody PicturePageDto pageDto) {
+        ThrowUtils.throwIf(pageDto == null, ErrorCode.PARAMS_ERROR);
+        pictureService.refreshCache(pageDto);
+        return ResultUtils.success(true);
+    }
+
+    @ApiOperation("获取所有缓存Key")
+    @PreAuthorize(role = UserRoleEnum.ADMIN)
+    @GetMapping("/cache/keyList")
+    public BaseResponse<List<String>> listAllCacheKeys(String prefix) {
+        List<String> keys = pictureService.getAllCacheKeys(prefix);
+        return ResultUtils.success(keys);
+    }
+
+    @ApiOperation("删除指定缓存")
+    @PreAuthorize(role = UserRoleEnum.ADMIN)
+    @GetMapping("/cache/remove")
+    public BaseResponse<Boolean> deleteCacheByKey(@RequestParam("hashKey") String hashKey) {
+        ThrowUtils.throwIf(StrUtil.isBlank(hashKey), ErrorCode.PARAMS_ERROR);
+        boolean result = pictureService.removeCacheByKey(hashKey);
+        return ResultUtils.success(result);
+    }
 }

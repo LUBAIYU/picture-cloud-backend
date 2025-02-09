@@ -855,6 +855,49 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture> impl
         return aliYunAiApi.createOutPaintingTask(createOutPaintingTaskRequest);
     }
 
+    @Override
+    public void refreshCache(PicturePageDto pageDto) {
+        // 查询条件转JSON，然后再Md5加密
+        String questionStr = JSONUtil.toJsonStr(pageDto);
+        String hashKey = DigestUtils.md5DigestAsHex(questionStr.getBytes());
+        // 构建缓存Key
+        String cacheKey = String.format("picture-cloud-backend:queryPictureVoByPage:%s", hashKey);
+        // 查询数据库
+        PageResult<PictureVo> pageResult = queryPictureVoByPage(pageDto);
+        String resultStr = JSONUtil.toJsonStr(pageResult);
+        // 更新 Redis 缓存
+        int cacheTime = 300 + RandomUtil.randomInt(0, 300);
+        stringRedisTemplate.opsForValue().set(cacheKey, resultStr, cacheTime, TimeUnit.SECONDS);
+        // 更新本地缓存
+        LOCAL_CACHE.put(cacheKey, resultStr);
+    }
+
+    @Override
+    public List<String> getAllCacheKeys(String prefix) {
+        String pattern = "*";
+        if (StrUtil.isNotBlank(prefix)) {
+            pattern = prefix + "*";
+        }
+        Set<String> keys = stringRedisTemplate.keys(pattern);
+        if (CollUtil.isEmpty(keys)) {
+            return Collections.emptyList();
+        }
+        return new ArrayList<>(keys);
+    }
+
+    @Override
+    public boolean removeCacheByKey(String hashKey) {
+        // 判断Key是否存在
+        List<String> keyList = getAllCacheKeys(null);
+        if (!keyList.contains(hashKey)) {
+            throw new BusinessException(ErrorCode.NOT_FOUND_ERROR);
+        }
+        // 删除指定Key
+        Boolean isDeleted = stringRedisTemplate.delete(hashKey);
+        ThrowUtils.throwIf(Boolean.FALSE.equals(isDeleted), ErrorCode.SYSTEM_ERROR);
+        return true;
+    }
+
     /**
      * 批量重命名
      *

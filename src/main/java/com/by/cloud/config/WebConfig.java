@@ -5,6 +5,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.http.converter.HttpMessageConverter;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
+import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurationSupport;
 
 import javax.annotation.Resource;
@@ -18,7 +19,7 @@ import java.util.Objects;
  */
 @Configuration
 @Slf4j
-public class CorsConfig extends WebMvcConfigurationSupport {
+public class WebConfig extends WebMvcConfigurationSupport {
 
     @Resource
     private MappingJackson2HttpMessageConverter mappingJackson2HttpMessageConverter;
@@ -40,6 +41,13 @@ public class CorsConfig extends WebMvcConfigurationSupport {
                 .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
                 .allowedHeaders("*")
                 .exposedHeaders("*");
+    }
+
+    @Override
+    protected void addResourceHandlers(ResourceHandlerRegistry registry) {
+        log.info("开启设置静态资源映射...");
+        registry.addResourceHandler("/doc.html").addResourceLocations("classpath:/META-INF/resources/");
+        registry.addResourceHandler("/webjars/**").addResourceLocations("classpath:/META-INF/resources/webjars/");
     }
 
     @Override

@@ -4,7 +4,6 @@ import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.crypto.digest.DigestUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -165,50 +164,25 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         // 获取登录用户
         User loginUser = this.getLoginUser(request);
 
-        // 如果当前登录用户是普通用户，则不能修改角色
-        UserRoleEnum roleEnum = UserRoleEnum.getEnumByValue(loginUser.getUserRole());
-        if (UserRoleEnum.ADMIN.getValue().equals(updateDto.getUserRole()) && UserRoleEnum.USER.equals(roleEnum)) {
-            throw new BusinessException(ErrorCode.NO_AUTH_ERROR);
-        }
-
-        // 判断是否有更新
-        boolean isUpdate = false;
-        // 构建更新条件
-        LambdaUpdateWrapper<User> updateWrapper = new LambdaUpdateWrapper<>();
-        updateWrapper.eq(User::getUserId, userId);
-        if (StrUtil.isNotBlank(updateDto.getUserAccount())) {
-            updateWrapper.set(User::getUserAccount, updateDto.getUserAccount());
-            isUpdate = true;
-        }
-        if (StrUtil.isNotBlank(updateDto.getUserName())) {
-            updateWrapper.set(User::getUserName, updateDto.getUserName());
-            isUpdate = true;
-        }
-        if (StrUtil.isNotBlank(updateDto.getUserAvatar())) {
-            updateWrapper.set(User::getUserAvatar, updateDto.getUserAvatar());
-            isUpdate = true;
-        }
-        if (StrUtil.isNotBlank(updateDto.getUserProfile())) {
-            updateWrapper.set(User::getUserProfile, updateDto.getUserProfile());
-            isUpdate = true;
-        }
-
-        // 如果有传角色则需传有效数据
-        if (updateDto.getUserRole() != null) {
-            UserRoleEnum updateRoleEnum = UserRoleEnum.getEnumByValue(updateDto.getUserRole());
-            if (!UserRoleEnum.ADMIN.equals(updateRoleEnum) && !UserRoleEnum.USER.equals(updateRoleEnum)) {
-                throw new BusinessException(ErrorCode.PARAMS_ERROR, "角色信息无效");
+        // 如果有传用户角色，则进行校验
+        Integer userRole = updateDto.getUserRole();
+        if (userRole != null) {
+            // 获取当前登录用户的角色
+            UserRoleEnum roleEnum = UserRoleEnum.getEnumByValue(loginUser.getUserRole());
+            // 校验角色是否有效
+            UserRoleEnum newRoleEnum = UserRoleEnum.getEnumByValue(userRole);
+            if (newRoleEnum == null) {
+                throw new BusinessException(ErrorCode.PARAMS_ERROR, "无效角色信息");
             }
-            updateWrapper.set(User::getUserRole, updateDto.getUserRole());
-            isUpdate = true;
+            // 如果当前登录用户不是管理员，则只能传递普通用户角色
+            if (UserRoleEnum.USER.equals(roleEnum) && UserRoleEnum.ADMIN.equals(newRoleEnum)) {
+                throw new BusinessException(ErrorCode.NO_AUTH_ERROR);
+            }
         }
 
-        // 如果没有更新，直接返回
-        if (!isUpdate) {
-            return true;
-        }
         // 更新
-        return this.update(updateWrapper);
+        User user = BeanUtil.copyProperties(updateDto, User.class);
+        return this.updateById(user);
     }
 
     @Override

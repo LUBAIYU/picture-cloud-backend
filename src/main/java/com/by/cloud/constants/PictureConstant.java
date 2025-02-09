@@ -27,7 +27,7 @@ public interface PictureConstant {
     /**
      * 图片文件最大大小
      */
-    long MAX_FILE_SIZE = 2 * 1024 * 1024;
+    long MAX_FILE_SIZE = 10 * 1024 * 1024;
 
     /**
      * 图片文件进行缩略处理的大小要求
