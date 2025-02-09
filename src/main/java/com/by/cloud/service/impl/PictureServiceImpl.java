@@ -892,6 +892,12 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture> impl
         if (!keyList.contains(hashKey)) {
             throw new BusinessException(ErrorCode.NOT_FOUND_ERROR);
         }
+        // 判断本地缓存是否存在该Key
+        String localCache = LOCAL_CACHE.getIfPresent(hashKey);
+        if (StrUtil.isNotBlank(localCache)) {
+            // 删除本地缓存
+            LOCAL_CACHE.invalidate(hashKey);
+        }
         // 删除指定Key
         Boolean isDeleted = stringRedisTemplate.delete(hashKey);
         ThrowUtils.throwIf(Boolean.FALSE.equals(isDeleted), ErrorCode.SYSTEM_ERROR);
