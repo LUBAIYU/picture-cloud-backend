@@ -244,7 +244,7 @@ public class PictureController {
     @ApiOperation("删除指定缓存")
     @PreAuthorize(role = UserRoleEnum.ADMIN)
     @GetMapping("/cache/remove")
-    public BaseResponse<Boolean> deleteCacheByKey(@RequestParam("hashKey") String hashKey) {
+    public BaseResponse<Boolean> deleteCacheByKey(@RequestParam String hashKey) {
         ThrowUtils.throwIf(StrUtil.isBlank(hashKey), ErrorCode.PARAMS_ERROR);
         boolean result = pictureService.removeCacheByKey(hashKey);
         return ResultUtils.success(result);
