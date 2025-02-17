@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.by.cloud.mapper.CommentReviewsMapper">
+
+    <resultMap id="BaseResultMap" type="com.by.cloud.model.entity.CommentReviews">
+            <id property="id" column="id" jdbcType="BIGINT"/>
+            <result property="commentId" column="comment_id" jdbcType="BIGINT"/>
+            <result property="reviewerId" column="reviewer_id" jdbcType="BIGINT"/>
+            <result property="reviewStatus" column="review_status" jdbcType="TINYINT"/>
+            <result property="reviewMsg" column="review_msg" jdbcType="VARCHAR"/>
+            <result property="reviewTime" column="review_time" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id,comment_id,reviewer_id,
+        review_status,review_msg,review_time
+    </sql>
+</mapper>

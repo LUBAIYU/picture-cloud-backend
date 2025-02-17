@@ -120,3 +120,44 @@ create table if not exists space_user
     INDEX idx_user_id (user_id)                       -- 提升按用户查询的性能
 ) comment '空间用户关联' collate = utf8mb4_unicode_ci;
 
+-- 评论表
+create table if not exists comments
+(
+    id          bigint auto_increment comment '主键ID' primary key,
+    content     text                               not null comment '评论内容',
+    pic_id      bigint                             not null comment '图片ID',
+    user_id     bigint                             not null comment '用户ID',
+    parent_id   bigint                             null comment '父级评论ID',
+    status      tinyint  default 0                 not null comment '0-待审核，1-通过，2-拒绝',
+    like_count  int      default 0                 not null comment '点赞数',
+    create_time datetime default CURRENT_TIMESTAMP not null comment '创建时间',
+    update_time datetime default CURRENT_TIMESTAMP not null on update CURRENT_TIMESTAMP comment '更新时间',
+    is_delete   tinyint  default 0                 not null comment '是否删除',
+    -- 索引设计
+    INDEX idx_pic_id (pic_id),      -- 提升基于图片ID的查询性能
+    INDEX idx_user_id (user_id),    -- 提升基于用户ID的查询性能
+    INDEX idx_parent_id (parent_id) -- 提升基于父级评论ID的查询性能
+) comment '评论表' collate = utf8mb4_unicode_ci;
+
+-- 评论点赞表
+create table if not exists comment_likes
+(
+    id          bigint auto_increment comment '主键ID' primary key,
+    comment_id  bigint                             not null comment '评论ID',
+    user_id     bigint                             not null comment '用户ID',
+    create_time datetime default CURRENT_TIMESTAMP not null comment '创建时间',
+    -- 索引设计
+    UNIQUE KEY uk_commentId_userId (comment_id, user_id),-- 唯一索引，防止用户重复点赞
+    INDEX idx_user_id (user_id)                          -- 查询用户的点赞记录
+) comment '评论点赞表' collate = utf8mb4_unicode_ci;
+
+-- 评论审核表
+create table if not exists comment_reviews
+(
+    id            bigint auto_increment comment '主键ID' primary key,
+    comment_id    bigint                             not null comment '评论ID',
+    reviewer_id   bigint                             not null comment '审核人ID',
+    review_status tinyint                            not null comment '审核状态：1-通过；2-拒绝',
+    review_msg    varchar(255)                       null comment '审核信息',
+    review_time   datetime default CURRENT_TIMESTAMP not null comment '审核时间'
+) comment '评论审核表' collate = utf8mb4_unicode_ci;
