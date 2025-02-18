@@ -14,28 +14,39 @@ import com.by.cloud.exception.BusinessException;
 import com.by.cloud.mapper.CommentsMapper;
 import com.by.cloud.model.dto.comment.CommentPageDto;
 import com.by.cloud.model.dto.comment.CommentPublishDto;
+import com.by.cloud.model.entity.CommentLikes;
 import com.by.cloud.model.entity.Comments;
 import com.by.cloud.model.entity.Picture;
 import com.by.cloud.model.entity.User;
 import com.by.cloud.model.vo.comment.CommentsViewVo;
 import com.by.cloud.model.vo.user.UserVo;
+import com.by.cloud.service.CommentLikesService;
 import com.by.cloud.service.CommentsService;
 import com.by.cloud.service.PictureService;
 import com.by.cloud.service.UserService;
 import com.by.cloud.utils.ThrowUtils;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.aop.framework.AopContext;
+import org.springframework.dao.DuplicateKeyException;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
+import java.time.LocalDateTime;
 import java.util.*;
+import java.util.concurrent.ExecutorService;
 import java.util.stream.Collectors;
 
 /**
  * @author lzh
  */
 @Service
+@Slf4j
 public class CommentsServiceImpl extends ServiceImpl<CommentsMapper, Comments> implements CommentsService {
 
     @Resource
@@ -43,6 +54,19 @@ public class CommentsServiceImpl extends ServiceImpl<CommentsMapper, Comments> i
 
     @Resource
     private PictureService pictureService;
+
+    @Resource
+    private RedisTemplate<String, Object> redisTemplate;
+
+    @Resource
+    private ExecutorService executorService;
+
+    @Resource
+    private CommentLikesService commentLikesService;
+
+    @Resource
+    private TransactionTemplate transactionTemplate;
+
 
     @Override
     public long publishComments(CommentPublishDto commentPublishDto, HttpServletRequest request) {
@@ -181,6 +205,96 @@ public class CommentsServiceImpl extends ServiceImpl<CommentsMapper, Comments> i
         result.setRecords(rootCommentsViewVoList);
         return result;
     }
+
+    @Override
+    public int getCommentCountByPicId(Long picId) {
+        // 判断图片是否存在
+        Picture picture = pictureService.getById(picId);
+        ThrowUtils.throwIf(picture == null, ErrorCode.NOT_FOUND_ERROR);
+        // 统计评论数
+        return this.lambdaQuery()
+                .eq(Comments::getPicId, picId)
+                .count()
+                .intValue();
+    }
+
+    @Override
+    public void thumbComment(Long commentId, HttpServletRequest request) {
+        // 1. 校验参数
+        Comments comments = this.getById(commentId);
+        ThrowUtils.throwIf(comments == null, ErrorCode.NOT_FOUND_ERROR);
+
+        // 2. 判断用户是否登录
+        Long loginUserId = userService.getLoginUserId(request);
+
+        // 3. 定义 Redis Key
+        String userLikeKey = "comment:like:users:" + commentId;
+        String likeCountKey = "comment:like:count:" + commentId;
+
+        // 4. 使用 Lua 脚本保证原子性（检查 + 计数）
+        String luaScript = """
+                if redis.call('SISMEMBER',KEYS[1],ARGV[1]) == 1 then
+                    return 0
+                end
+                redis.call('SADD',KEYS[1],ARGV[1])
+                return redis.call('INCR',KEYS[2])
+                """;
+        // 执行脚本获取返回值（点赞总数）
+        Long likeCount = redisTemplate.execute(
+                new DefaultRedisScript<>(luaScript, Long.class),
+                Arrays.asList(userLikeKey, likeCountKey),
+                loginUserId.toString()
+        );
+
+        // 5. 已点赞则直接返回
+        if (likeCount == null || likeCount == 0) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "已点赞");
+        }
+
+        // 6. 异步持久化
+        executorService.submit(() -> persistLikeAsync(commentId, loginUserId, userLikeKey, likeCountKey, likeCount));
+    }
+
+    /**
+     * 写入点赞记录并更新点赞总数
+     *
+     * @param commentId    评论ID
+     * @param userId       用户ID
+     * @param userLikeKey  用户点赞 Key
+     * @param likeCountKey 点赞总数 Key
+     * @param likeCount    点赞总数
+     */
+    public void persistLikeAsync(Long commentId, Long userId, String userLikeKey, String likeCountKey, Long likeCount) {
+        try {
+            // 设置事务隔离级别为创建新事务
+            transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+            // 开启事务
+            transactionTemplate.executeWithoutResult(transactionStatus -> {
+                // 写入点赞记录
+                CommentLikes commentLikes = new CommentLikes();
+                commentLikes.setCommentId(commentId);
+                commentLikes.setUserId(userId);
+                commentLikes.setCreateTime(LocalDateTime.now());
+                commentLikesService.save(commentLikes);
+
+                // 更新点赞总数
+                Comments comments = new Comments();
+                comments.setId(commentId);
+                comments.setLikeCount(likeCount.intValue());
+                comments.setUpdateTime(LocalDateTime.now());
+                this.updateById(comments);
+            });
+        } catch (DuplicateKeyException e) {
+            // 唯一索引冲突，防止并发重复插入
+            log.error("重复点赞：commentId={},userId={}", commentId, userId);
+        } catch (Exception e) {
+            // 回滚 Redis
+            redisTemplate.opsForSet().remove(userLikeKey, userId);
+            redisTemplate.opsForValue().decrement(likeCountKey);
+            log.error("持久化失败，已回滚", e);
+        }
+    }
+
 
     /**
      * 递归删除子级评论

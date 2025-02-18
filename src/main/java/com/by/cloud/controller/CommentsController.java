@@ -50,4 +50,20 @@ public class CommentsController {
         IPage<CommentsViewVo> pageResult = commentsService.queryCommentsByPage(commentPageDto);
         return ResultUtils.success(pageResult);
     }
+
+    @ApiOperation("查询某张图片的评论总数")
+    @GetMapping("/count/{id}")
+    public BaseResponse<Integer> getCommentCount(@PathVariable("id") Long picId) {
+        ThrowUtils.throwIf(picId == null || picId <= 0, ErrorCode.PARAMS_ERROR);
+        int count = commentsService.getCommentCountByPicId(picId);
+        return ResultUtils.success(count);
+    }
+
+    @ApiOperation("评论点赞")
+    @PostMapping("/thumb")
+    public BaseResponse<Boolean> thumbComment(Long commentId, HttpServletRequest request) {
+        ThrowUtils.throwIf(commentId == null || commentId <= 0, ErrorCode.PARAMS_ERROR);
+        commentsService.thumbComment(commentId, request);
+        return ResultUtils.success(true);
+    }
 }

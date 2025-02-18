@@ -38,4 +38,20 @@ public interface CommentsService extends IService<Comments> {
      * @return 树形评论
      */
     IPage<CommentsViewVo> queryCommentsByPage(CommentPageDto commentPageDto);
+
+    /**
+     * 根据图片ID查询评论总数
+     *
+     * @param picId 图片ID
+     * @return 评论总数
+     */
+    int getCommentCountByPicId(Long picId);
+
+    /**
+     * 评论点赞
+     *
+     * @param commentId 评论ID
+     * @param request   请求对象
+     */
+    void thumbComment(Long commentId, HttpServletRequest request);
 }
