@@ -54,4 +54,12 @@ public interface CommentsService extends IService<Comments> {
      * @param request   请求对象
      */
     void thumbComment(Long commentId, HttpServletRequest request);
+
+    /**
+     * 取消评论点赞
+     *
+     * @param commentId 评论ID
+     * @param request   请求对象
+     */
+    void cancelThumbComment(Long commentId, HttpServletRequest request);
 }

@@ -66,4 +66,12 @@ public class CommentsController {
         commentsService.thumbComment(commentId, request);
         return ResultUtils.success(true);
     }
+
+    @ApiOperation("取消评论点赞")
+    @PostMapping("/thumb/cancel")
+    public BaseResponse<Boolean> cancelThumbComment(Long commentId, HttpServletRequest request) {
+        ThrowUtils.throwIf(commentId == null || commentId <= 0, ErrorCode.PARAMS_ERROR);
+        commentsService.cancelThumbComment(commentId, request);
+        return ResultUtils.success(true);
+    }
 }

@@ -247,12 +247,55 @@ public class CommentsServiceImpl extends ServiceImpl<CommentsMapper, Comments> i
         );
 
         // 5. 已点赞则直接返回
-        if (likeCount == null || likeCount == 0) {
+        if (likeCount == null) {
+            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "Redis 操作失败");
+        }
+        if (likeCount == 0) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "已点赞");
         }
 
         // 6. 异步持久化
-        executorService.submit(() -> persistLikeAsync(commentId, loginUserId, userLikeKey, likeCountKey, likeCount));
+        executorService.submit(() -> persistLikeAsync(commentId, loginUserId, userLikeKey, likeCountKey, likeCount, false));
+    }
+
+    @Override
+    public void cancelThumbComment(Long commentId, HttpServletRequest request) {
+        // 1. 校验参数
+        Comments comments = this.getById(commentId);
+        ThrowUtils.throwIf(comments == null, ErrorCode.NOT_FOUND_ERROR);
+
+        // 2. 判断用户是否登录
+        Long loginUserId = userService.getLoginUserId(request);
+
+        // 3. 定义 Redis Key
+        String userLikeKey = "comment:like:users:" + commentId;
+        String likeCountKey = "comment:like:count:" + commentId;
+
+        // 4. 使用 Lua 脚本保证原子性（检查 + 计数）
+        String luaScript = """
+                if redis.call('SISMEMBER',KEYS[1],ARGV[1]) == 0 then
+                    return -1
+                end
+                redis.call('SREM',KEYS[1],ARGV[1])
+                return redis.call('DECR',KEYS[2])
+                """;
+        // 执行脚本获取返回值（点赞总数）
+        Long likeCount = redisTemplate.execute(
+                new DefaultRedisScript<>(luaScript, Long.class),
+                Arrays.asList(userLikeKey, likeCountKey),
+                loginUserId.toString()
+        );
+
+        // 5. 未点赞则直接返回
+        if (likeCount == null) {
+            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "Redis 操作失败");
+        }
+        if (likeCount == -1) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "未点赞，无法取消");
+        }
+
+        // 6. 异步持久化
+        executorService.submit(() -> persistLikeAsync(commentId, loginUserId, userLikeKey, likeCountKey, likeCount, true));
     }
 
     /**
@@ -263,19 +306,28 @@ public class CommentsServiceImpl extends ServiceImpl<CommentsMapper, Comments> i
      * @param userLikeKey  用户点赞 Key
      * @param likeCountKey 点赞总数 Key
      * @param likeCount    点赞总数
+     * @param isCancel     是否是取消操作
      */
-    public void persistLikeAsync(Long commentId, Long userId, String userLikeKey, String likeCountKey, Long likeCount) {
+    public void persistLikeAsync(Long commentId, Long userId, String userLikeKey, String likeCountKey, Long likeCount, boolean isCancel) {
         try {
             // 设置事务隔离级别为创建新事务
             transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
             // 开启事务
             transactionTemplate.executeWithoutResult(transactionStatus -> {
-                // 写入点赞记录
-                CommentLikes commentLikes = new CommentLikes();
-                commentLikes.setCommentId(commentId);
-                commentLikes.setUserId(userId);
-                commentLikes.setCreateTime(LocalDateTime.now());
-                commentLikesService.save(commentLikes);
+                if (!isCancel) {
+                    // 写入点赞记录
+                    CommentLikes commentLikes = new CommentLikes();
+                    commentLikes.setCommentId(commentId);
+                    commentLikes.setUserId(userId);
+                    commentLikes.setCreateTime(LocalDateTime.now());
+                    commentLikesService.save(commentLikes);
+                } else {
+                    // 删除点赞记录
+                    commentLikesService.lambdaUpdate()
+                            .eq(CommentLikes::getCommentId, commentId)
+                            .eq(CommentLikes::getUserId, userId)
+                            .remove();
+                }
 
                 // 更新点赞总数
                 Comments comments = new Comments();
@@ -289,8 +341,13 @@ public class CommentsServiceImpl extends ServiceImpl<CommentsMapper, Comments> i
             log.error("重复点赞：commentId={},userId={}", commentId, userId);
         } catch (Exception e) {
             // 回滚 Redis
-            redisTemplate.opsForSet().remove(userLikeKey, userId);
-            redisTemplate.opsForValue().decrement(likeCountKey);
+            if (!isCancel) {
+                redisTemplate.opsForSet().remove(userLikeKey, userId);
+                redisTemplate.opsForValue().decrement(likeCountKey);
+            } else {
+                redisTemplate.opsForSet().add(userLikeKey, userId);
+                redisTemplate.opsForValue().increment(likeCountKey);
+            }
             log.error("持久化失败，已回滚", e);
         }
     }
