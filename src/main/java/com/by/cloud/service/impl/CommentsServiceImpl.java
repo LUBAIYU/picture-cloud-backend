@@ -5,6 +5,7 @@ import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -27,6 +28,7 @@ import com.by.cloud.service.UserService;
 import com.by.cloud.utils.ThrowUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.aop.framework.AopContext;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.script.DefaultRedisScript;
@@ -52,6 +54,7 @@ public class CommentsServiceImpl extends ServiceImpl<CommentsMapper, Comments> i
     @Resource
     private UserService userService;
 
+    @Lazy
     @Resource
     private PictureService pictureService;
 
@@ -296,6 +299,33 @@ public class CommentsServiceImpl extends ServiceImpl<CommentsMapper, Comments> i
 
         // 6. 异步持久化
         executorService.submit(() -> persistLikeAsync(commentId, loginUserId, userLikeKey, likeCountKey, likeCount, true));
+    }
+
+    @Override
+    public Map<Long, Long> queryBatchCommentCount(List<Long> picIdList) {
+        // 构建查询条件
+        QueryWrapper<Comments> queryWrapper = new QueryWrapper<>();
+        queryWrapper.in("pic_id", picIdList);
+        queryWrapper.groupBy("pic_id");
+        queryWrapper.select("pic_id", "COUNT(*) as commentsCount");
+
+        // 执行查询
+        List<Map<String, Object>> mapList = this.listMaps(queryWrapper);
+
+        // 封装结果到Map
+        Map<Long, Long> resultMap = new HashMap<>(10);
+        for (Map<String, Object> objectMap : mapList) {
+            Long picId = (Long) objectMap.get("pic_id");
+            Long commentsCount = (Long) objectMap.get("commentsCount");
+            resultMap.put(picId, commentsCount);
+        }
+
+        // 处理没有评论的图片
+        for (Long picId : picIdList) {
+            resultMap.putIfAbsent(picId, 0L);
+        }
+
+        return resultMap;
     }
 
     /**

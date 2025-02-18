@@ -87,6 +87,7 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture> impl
     private final PictureMapper pictureMapper;
     private final AliYunAiApi aliYunAiApi;
     private final SpaceUserAuthManager spaceUserAuthManager;
+    private final CommentsService commentsService;
 
     /**
      * 本地缓存
@@ -249,6 +250,10 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture> impl
             pictureVo.setTagList(tagList);
         }
 
+        // 设置图片的评论总数
+        long count = commentsService.getCommentCountByPicId(pictureVo.getPicId());
+        pictureVo.setCommentsCount(count);
+
         // 设置图片的创建用户信息
         Long userId = picture.getUserId();
         User user = userService.getById(userId);
@@ -352,11 +357,17 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture> impl
             pictureIdTagListMap.put(pictureId, tagList);
         });
 
-        // 设置标签信息
+        // 获取每个图片的评论数
+        Map<Long, Long> picIdCommentsCountMap = commentsService.queryBatchCommentCount(pictureIdList);
+
+        // 设置标签信息和评论数
         for (PictureVo pictureVo : pictureVoList) {
             Long picId = pictureVo.getPicId();
             if (pictureIdTagListMap.containsKey(picId)) {
                 pictureVo.setTagList(pictureIdTagListMap.get(picId));
+            }
+            if (picIdCommentsCountMap.containsKey(picId)) {
+                pictureVo.setCommentsCount(picIdCommentsCountMap.get(picId));
             }
         }
 

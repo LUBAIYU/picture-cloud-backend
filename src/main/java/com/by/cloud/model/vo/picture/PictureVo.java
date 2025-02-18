@@ -88,6 +88,9 @@ public class PictureVo implements Serializable {
     @ApiModelProperty("权限列表")
     private List<String> permissionList = Collections.emptyList();
 
+    @ApiModelProperty("评论总数")
+    private Long commentsCount;
+
     @ApiModelProperty("审核时间")
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime reviewTime;

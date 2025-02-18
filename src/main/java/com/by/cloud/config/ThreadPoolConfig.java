@@ -16,7 +16,7 @@ public class ThreadPoolConfig {
     /**
      * cpu核数
      */
-    private final int cpuCores = Runtime.getRuntime().availableProcessors();
+    private final int CPU_CORES = Runtime.getRuntime().availableProcessors();
 
     /**
      * 自定义线程池
@@ -36,8 +36,8 @@ public class ThreadPoolConfig {
         };
 
         return new ThreadPoolExecutor(
-                cpuCores * 2,
-                cpuCores * 2,
+                CPU_CORES * 2,
+                CPU_CORES * 2,
                 60,
                 TimeUnit.SECONDS,
                 new ArrayBlockingQueue<>(100),

@@ -8,6 +8,8 @@ import com.by.cloud.model.entity.Comments;
 import com.by.cloud.model.vo.comment.CommentsViewVo;
 
 import javax.servlet.http.HttpServletRequest;
+import java.util.List;
+import java.util.Map;
 
 /**
  * @author lzh
@@ -62,4 +64,12 @@ public interface CommentsService extends IService<Comments> {
      * @param request   请求对象
      */
     void cancelThumbComment(Long commentId, HttpServletRequest request);
+
+    /**
+     * 批量查询图片的评论数
+     *
+     * @param picIdList 图片ID列表
+     * @return 图片ID与评论数的映射
+     */
+    Map<Long, Long> queryBatchCommentCount(List<Long> picIdList);
 }

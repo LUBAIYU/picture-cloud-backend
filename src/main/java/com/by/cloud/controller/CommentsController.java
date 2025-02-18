@@ -1,5 +1,6 @@
 package com.by.cloud.controller;
 
+import cn.hutool.core.collection.CollUtil;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.by.cloud.common.BaseResponse;
 import com.by.cloud.enums.ErrorCode;
@@ -15,6 +16,8 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
+import java.util.List;
+import java.util.Map;
 
 /**
  * @author lzh
@@ -57,6 +60,14 @@ public class CommentsController {
         ThrowUtils.throwIf(picId == null || picId <= 0, ErrorCode.PARAMS_ERROR);
         int count = commentsService.getCommentCountByPicId(picId);
         return ResultUtils.success(count);
+    }
+
+    @ApiOperation("批量查询图片的评论数")
+    @GetMapping("/count/batch")
+    public BaseResponse<Map<Long, Long>> queryBatchCommentCount(@RequestParam("ids") List<Long> picIdList) {
+        ThrowUtils.throwIf(CollUtil.isEmpty(picIdList), ErrorCode.PARAMS_ERROR);
+        Map<Long, Long> resultMap = commentsService.queryBatchCommentCount(picIdList);
+        return ResultUtils.success(resultMap);
     }
 
     @ApiOperation("评论点赞")
