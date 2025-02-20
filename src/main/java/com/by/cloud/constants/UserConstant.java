@@ -14,4 +14,6 @@ public interface UserConstant {
     int USER_PASSWORD_LENGTH = 8;
 
     String USER_LOGIN_STATE = "user_login_state";
+
+    String AI_USER_ACCOUNT = "AI助手";
 }

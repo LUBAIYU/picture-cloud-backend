@@ -23,6 +23,13 @@ spring:
   session:
     # 表示从Redis中读写Session
     store-type: redis     # 默认为none 表示存储在单台服务器
+  # RabbitMQ 配置
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: guest
+    password: guest
+    virtual-host: /
 
   # 文件上传开放更大的体积
   servlet:

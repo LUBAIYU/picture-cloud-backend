@@ -128,7 +128,7 @@ create table if not exists comments
     pic_id      bigint                             not null comment '图片ID',
     user_id     bigint                             not null comment '用户ID',
     parent_id   bigint                             null comment '父级评论ID',
-    status      tinyint  default 0                 not null comment '0-待审核，1-通过，2-拒绝',
+    status      tinyint  default 0                 not null comment '0-已提交，1-审核中，2-通过，3-拒绝，4-失败',
     like_count  int      default 0                 not null comment '点赞数',
     create_time datetime default CURRENT_TIMESTAMP not null comment '创建时间',
     update_time datetime default CURRENT_TIMESTAMP not null on update CURRENT_TIMESTAMP comment '更新时间',
@@ -157,7 +157,7 @@ create table if not exists comment_reviews
     id            bigint auto_increment comment '主键ID' primary key,
     comment_id    bigint                             not null comment '评论ID',
     reviewer_id   bigint                             not null comment '审核人ID',
-    review_status tinyint                            not null comment '审核状态：1-通过；2-拒绝',
+    review_status tinyint                            not null comment '审核状态：0-审核通过；1-审核拒绝；2-系统异常',
     review_msg    varchar(255)                       null comment '审核信息',
     review_time   datetime default CURRENT_TIMESTAMP not null comment '审核时间'
 ) comment '评论审核表' collate = utf8mb4_unicode_ci;

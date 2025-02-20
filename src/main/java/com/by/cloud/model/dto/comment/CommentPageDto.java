@@ -14,8 +14,14 @@ import lombok.EqualsAndHashCode;
 @Data
 public class CommentPageDto extends PageRequest {
 
+    @ApiModelProperty("评论内容")
+    private String content;
+
     @ApiModelProperty("图片ID")
     private Long picId;
+
+    @ApiModelProperty("用户ID")
+    private Long userId;
 
     @ApiModelProperty("0-待审核，1-通过，2-拒绝")
     private Integer status;

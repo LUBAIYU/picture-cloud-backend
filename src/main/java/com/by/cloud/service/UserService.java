@@ -111,4 +111,11 @@ public interface UserService extends IService<User> {
      * @return boolean
      */
     boolean isAdmin(User user);
+
+    /**
+     * 获取AI助手角色ID
+     *
+     * @return ID
+     */
+    long getAiUserId();
 }

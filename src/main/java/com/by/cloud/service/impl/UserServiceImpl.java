@@ -259,6 +259,14 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         return UserRoleEnum.ADMIN.equals(roleEnum);
     }
 
+    @Override
+    public long getAiUserId() {
+        User aiUser = this.lambdaQuery()
+                .eq(User::getUserAccount, UserConstant.AI_USER_ACCOUNT)
+                .one();
+        return aiUser.getUserId();
+    }
+
     /**
      * 校验密码和确认密码
      *

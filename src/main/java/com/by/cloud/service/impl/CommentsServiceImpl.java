@@ -21,6 +21,7 @@ import com.by.cloud.model.entity.Picture;
 import com.by.cloud.model.entity.User;
 import com.by.cloud.model.vo.comment.CommentsViewVo;
 import com.by.cloud.model.vo.user.UserVo;
+import com.by.cloud.mq.MessageProducer;
 import com.by.cloud.service.CommentLikesService;
 import com.by.cloud.service.CommentsService;
 import com.by.cloud.service.PictureService;
@@ -70,6 +71,9 @@ public class CommentsServiceImpl extends ServiceImpl<CommentsMapper, Comments> i
     @Resource
     private TransactionTemplate transactionTemplate;
 
+    @Resource
+    private MessageProducer messageProducer;
+
 
     @Override
     public long publishComments(CommentPublishDto commentPublishDto, HttpServletRequest request) {
@@ -101,12 +105,18 @@ public class CommentsServiceImpl extends ServiceImpl<CommentsMapper, Comments> i
         comments.setContent(content);
         comments.setParentId(parentId);
         comments.setUserId(loginUserId);
-        comments.setStatus(CommentReviewStatusEnum.UNREVIEWED.getValue());
+        comments.setStatus(CommentReviewStatusEnum.SUBMITTED.getValue());
 
         // 6. 写入评论数据
         boolean saved = this.save(comments);
         ThrowUtils.throwIf(!saved, ErrorCode.OPERATION_ERROR);
-        return comments.getId();
+
+        // 7. 发送消息到消息队列，异步审核
+        long commentsId = comments.getId();
+        messageProducer.sendMessage(String.valueOf(commentsId));
+
+        // 8. 返回评论ID
+        return commentsId;
     }
 
     @Override
@@ -137,13 +147,17 @@ public class CommentsServiceImpl extends ServiceImpl<CommentsMapper, Comments> i
         // 1. 获取参数
         int current = commentPageDto.getCurrent();
         int pageSize = commentPageDto.getPageSize();
+        String content = commentPageDto.getContent();
         Long picId = commentPageDto.getPicId();
+        Long createUserId = commentPageDto.getUserId();
         Integer status = commentPageDto.getStatus();
 
         // 2. 分页查询所有评论
         IPage<Comments> page = new Page<>(current, pageSize);
         LambdaQueryWrapper<Comments> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.like(StrUtil.isNotBlank(content), Comments::getContent, content);
         queryWrapper.eq(ObjectUtil.isNotEmpty(picId), Comments::getPicId, picId);
+        queryWrapper.eq(ObjectUtil.isNotEmpty(createUserId), Comments::getUserId, createUserId);
         queryWrapper.eq(ObjectUtil.isNotEmpty(status), Comments::getStatus, status);
         queryWrapper.orderByDesc(Comments::getCreateTime);
         page = this.page(page, queryWrapper);
