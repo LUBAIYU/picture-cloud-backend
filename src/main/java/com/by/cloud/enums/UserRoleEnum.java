@@ -12,7 +12,8 @@ public enum UserRoleEnum {
      * 角色枚举
      */
     ADMIN(0, "管理员"),
-    USER(1, "普通用户");
+    USER(1, "普通用户"),
+    VIP(2, "vip");
 
     private final Integer value;
 

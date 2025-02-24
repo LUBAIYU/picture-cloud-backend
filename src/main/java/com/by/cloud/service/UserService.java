@@ -118,4 +118,13 @@ public interface UserService extends IService<User> {
      * @return ID
      */
     long getAiUserId();
+
+    /**
+     * 兑换VIP
+     *
+     * @param user    用户
+     * @param vipCode VIP 兑换码
+     * @return 是否兑换成功
+     */
+    boolean exchangeVip(User user, String vipCode);
 }

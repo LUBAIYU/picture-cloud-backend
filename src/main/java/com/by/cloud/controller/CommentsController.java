@@ -6,6 +6,7 @@ import com.by.cloud.common.BaseResponse;
 import com.by.cloud.enums.ErrorCode;
 import com.by.cloud.model.dto.comment.CommentPageDto;
 import com.by.cloud.model.dto.comment.CommentPublishDto;
+import com.by.cloud.model.dto.comment.CommentReviewDto;
 import com.by.cloud.model.vo.comment.CommentsViewVo;
 import com.by.cloud.service.CommentsService;
 import com.by.cloud.utils.ResultUtils;
@@ -83,6 +84,14 @@ public class CommentsController {
     public BaseResponse<Boolean> cancelThumbComment(Long commentId, HttpServletRequest request) {
         ThrowUtils.throwIf(commentId == null || commentId <= 0, ErrorCode.PARAMS_ERROR);
         commentsService.cancelThumbComment(commentId, request);
+        return ResultUtils.success(true);
+    }
+
+    @ApiOperation("人工评论审核")
+    @PostMapping("/review")
+    public BaseResponse<Boolean> commentReview(@RequestBody CommentReviewDto commentReviewDto, HttpServletRequest request) {
+        ThrowUtils.throwIf(commentReviewDto == null, ErrorCode.PARAMS_ERROR);
+        commentsService.commentReview(commentReviewDto, request);
         return ResultUtils.success(true);
     }
 }

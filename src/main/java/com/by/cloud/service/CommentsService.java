@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.by.cloud.model.dto.comment.CommentPageDto;
 import com.by.cloud.model.dto.comment.CommentPublishDto;
+import com.by.cloud.model.dto.comment.CommentReviewDto;
 import com.by.cloud.model.entity.Comments;
 import com.by.cloud.model.vo.comment.CommentsViewVo;
 
@@ -72,4 +73,12 @@ public interface CommentsService extends IService<Comments> {
      * @return 图片ID与评论数的映射
      */
     Map<Long, Long> queryBatchCommentCount(List<Long> picIdList);
+
+    /**
+     * 人工评论审核
+     *
+     * @param commentReviewDto 评论审核参数
+     * @param request          请求对象
+     */
+    void commentReview(CommentReviewDto commentReviewDto, HttpServletRequest request);
 }

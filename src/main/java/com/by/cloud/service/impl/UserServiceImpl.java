@@ -1,8 +1,12 @@
 package com.by.cloud.service.impl;
 
 import cn.hutool.core.bean.BeanUtil;
+import cn.hutool.core.collection.CollUtil;
+import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.crypto.digest.DigestUtil;
+import cn.hutool.json.JSONArray;
+import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -16,29 +20,34 @@ import com.by.cloud.enums.UserRoleEnum;
 import com.by.cloud.enums.UserStatusEnum;
 import com.by.cloud.exception.BusinessException;
 import com.by.cloud.mapper.UserMapper;
-import com.by.cloud.model.dto.user.UserLoginDto;
-import com.by.cloud.model.dto.user.UserPageDto;
-import com.by.cloud.model.dto.user.UserRegisterDto;
-import com.by.cloud.model.dto.user.UserUpdateDto;
+import com.by.cloud.model.dto.user.*;
 import com.by.cloud.model.entity.User;
 import com.by.cloud.model.vo.user.UserVo;
 import com.by.cloud.service.UserService;
 import com.by.cloud.utils.ThrowUtils;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.ResourceLoader;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * @author lzh
  */
 @Service
+@Slf4j
 public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements UserService {
 
     @Value("${user.encrypt.salt}")
@@ -46,6 +55,14 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
     @Resource
     private FileManager fileManager;
+
+    @Resource
+    private ResourceLoader resourceLoader;
+
+    /**
+     * 锁,防止文件读写时并发冲突
+     */
+    private final Lock lock = new ReentrantLock();
 
     @Override
     public User getLoginUser(HttpServletRequest request) {
@@ -267,6 +284,19 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         return aiUser.getUserId();
     }
 
+    @Override
+    public boolean exchangeVip(User user, String vipCode) {
+        // 参数校验
+        if (user == null || StrUtil.isBlank(vipCode)) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        // 读取并校验兑换码
+        VipCode targetCode = validAndUpdateVipCode(vipCode);
+        // 更新用户信息
+        updateVipUserInfo(user, targetCode.getCode());
+        return true;
+    }
+
     /**
      * 校验密码和确认密码
      *
@@ -289,6 +319,92 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
      */
     private String getEncryptPassword(String userPassword) {
         return DigestUtil.md5Hex(userPassword + salt);
+    }
+
+    /**
+     * 校验兑换码并标记为已使用
+     *
+     * @param vipCode 兑换码
+     */
+    private VipCode validAndUpdateVipCode(String vipCode) {
+        // 加锁
+        lock.lock();
+        try {
+            // 读取JSON文件
+            JSONArray jsonArray = readVipCodeFile();
+
+            // 查找匹配的未使用兑换码
+            List<VipCode> vipCodeList = JSONUtil.toList(jsonArray, VipCode.class);
+            if (CollUtil.isEmpty(vipCodeList)) {
+                throw new BusinessException(ErrorCode.SYSTEM_ERROR, "不存在兑换码");
+            }
+            VipCode target = vipCodeList.stream()
+                    .filter(code -> code.getCode().equals(vipCode) && !code.isHasUsed())
+                    .findFirst()
+                    .orElseThrow(() -> new BusinessException(ErrorCode.PARAMS_ERROR, "无效的兑换码"));
+
+            // 标记为已使用
+            target.setHasUsed(true);
+
+            // 写回文件
+            writeVipCodeFile(JSONUtil.parseArray(vipCodeList));
+            return target;
+        } finally {
+            // 解锁
+            lock.unlock();
+        }
+    }
+
+    /**
+     * 更新用户会员信息
+     *
+     * @param user 用户
+     * @param code 兑换码
+     */
+    private void updateVipUserInfo(User user, String code) {
+        LocalDateTime expireTime = LocalDateTime.now().plusYears(1);
+        // 更新用户信息
+        User updateUser = new User();
+        updateUser.setUserId(user.getUserId());
+        updateUser.setVipCode(code);
+        updateUser.setUserRole(UserRoleEnum.VIP.getValue());
+        updateUser.setVipExpireTime(expireTime);
+        // 执行更新
+        boolean updated = this.updateById(updateUser);
+        if (!updated) {
+            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "开通会员失败");
+        }
+    }
+
+    /**
+     * 读取兑换码文件
+     *
+     * @return JSONArray
+     */
+    private JSONArray readVipCodeFile() {
+        try {
+            org.springframework.core.io.Resource resource = resourceLoader.getResource("classpath:biz/vipCode.json");
+            String jsonStr = FileUtil.readString(resource.getFile(), StandardCharsets.UTF_8);
+            return JSONUtil.parseArray(jsonStr);
+        } catch (IOException e) {
+            log.error("读取兑换码文件失败", e);
+            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "系统繁忙");
+        }
+    }
+
+    /**
+     * 写入兑换码文件
+     *
+     * @param jsonArray JSONArray
+     */
+    private void writeVipCodeFile(JSONArray jsonArray) {
+        try {
+            org.springframework.core.io.Resource resource = resourceLoader.getResource("classpath:biz/vipCode.json");
+            FileUtil.writeString(jsonArray.toStringPretty(), resource.getFile(), StandardCharsets.UTF_8);
+        } catch (IOException e) {
+            log.error("更新兑换码文件失败", e);
+            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "系统繁忙");
+        }
     }
 }
 

@@ -61,6 +61,22 @@ public class User implements Serializable {
     private Integer userRole;
 
     /**
+     * 会员过期时间
+     */
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    private LocalDateTime vipExpireTime;
+
+    /**
+     * 会员兑换码
+     */
+    private String vipCode;
+
+    /**
+     * 会员编号
+     */
+    private Long vipNumber;
+
+    /**
      * 编辑时间
      */
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")

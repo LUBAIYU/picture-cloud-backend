@@ -11,21 +11,17 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.by.cloud.enums.CommentReviewStatusEnum;
 import com.by.cloud.enums.ErrorCode;
+import com.by.cloud.enums.ReviewResultStatusEnum;
 import com.by.cloud.exception.BusinessException;
 import com.by.cloud.mapper.CommentsMapper;
 import com.by.cloud.model.dto.comment.CommentPageDto;
 import com.by.cloud.model.dto.comment.CommentPublishDto;
-import com.by.cloud.model.entity.CommentLikes;
-import com.by.cloud.model.entity.Comments;
-import com.by.cloud.model.entity.Picture;
-import com.by.cloud.model.entity.User;
+import com.by.cloud.model.dto.comment.CommentReviewDto;
+import com.by.cloud.model.entity.*;
 import com.by.cloud.model.vo.comment.CommentsViewVo;
 import com.by.cloud.model.vo.user.UserVo;
 import com.by.cloud.mq.MessageProducer;
-import com.by.cloud.service.CommentLikesService;
-import com.by.cloud.service.CommentsService;
-import com.by.cloud.service.PictureService;
-import com.by.cloud.service.UserService;
+import com.by.cloud.service.*;
 import com.by.cloud.utils.ThrowUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.aop.framework.AopContext;
@@ -73,6 +69,9 @@ public class CommentsServiceImpl extends ServiceImpl<CommentsMapper, Comments> i
 
     @Resource
     private MessageProducer messageProducer;
+
+    @Resource
+    private CommentReviewsService commentReviewsService;
 
 
     @Override
@@ -340,6 +339,54 @@ public class CommentsServiceImpl extends ServiceImpl<CommentsMapper, Comments> i
         }
 
         return resultMap;
+    }
+
+    @Override
+    public void commentReview(CommentReviewDto commentReviewDto, HttpServletRequest request) {
+        // 获取登录用户ID
+        Long loginUserId = userService.getLoginUserId(request);
+        // 获取参数
+        Long commentId = commentReviewDto.getCommentId();
+        Integer reviewStatus = commentReviewDto.getReviewStatus();
+        String reviewMsg = commentReviewDto.getReviewMsg();
+        // 判断评论是否存在
+        if (commentId == null || commentId <= 0) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        Comments comments = this.getById(commentId);
+        if (comments == null) {
+            throw new BusinessException(ErrorCode.NOT_FOUND_ERROR);
+        }
+        // 判断评论状态是否合法
+        CommentReviewStatusEnum statusEnum = CommentReviewStatusEnum.getEnumByValue(reviewStatus);
+        if (statusEnum == null) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        // 修改评论状态
+        boolean update = this.lambdaUpdate()
+                .eq(Comments::getId, commentId)
+                .set(Comments::getStatus, reviewStatus)
+                .update();
+        ThrowUtils.throwIf(!update, ErrorCode.SYSTEM_ERROR, "评论状态更新失败");
+        // 写入审核记录
+        CommentReviews commentReviews = new CommentReviews();
+        commentReviews.setCommentId(commentId);
+        commentReviews.setReviewerId(loginUserId);
+        commentReviews.setReviewMsg(reviewMsg);
+        commentReviews.setReviewTime(LocalDateTime.now());
+        // 设置相同的状态值
+        switch (statusEnum) {
+            case PASS:
+                commentReviews.setReviewStatus(ReviewResultStatusEnum.APPROVE.getValue());
+                break;
+            case REJECT:
+                commentReviews.setReviewStatus(ReviewResultStatusEnum.REJECT.getValue());
+                break;
+            default:
+                throw new BusinessException(ErrorCode.PARAMS_ERROR, "不合理的状态值");
+        }
+        boolean saved = commentReviewsService.save(commentReviews);
+        ThrowUtils.throwIf(!saved, ErrorCode.SYSTEM_ERROR, "审核记录写入失败");
     }
 
     /**

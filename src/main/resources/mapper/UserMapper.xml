@@ -5,24 +5,28 @@
 <mapper namespace="com.by.cloud.mapper.UserMapper">
 
     <resultMap id="BaseResultMap" type="com.by.cloud.model.entity.User">
-            <id property="userId" column="user_id" jdbcType="BIGINT"/>
-            <result property="userAccount" column="user_account" jdbcType="VARCHAR"/>
-            <result property="userPassword" column="user_password" jdbcType="VARCHAR"/>
-            <result property="userName" column="user_name" jdbcType="VARCHAR"/>
-            <result property="userAvatar" column="user_avatar" jdbcType="VARCHAR"/>
-            <result property="userProfile" column="user_profile" jdbcType="VARCHAR"/>
-            <result property="userStatus" column="user_status" jdbcType="TINYINT"/>
-            <result property="userRole" column="user_role" jdbcType="TINYINT"/>
-            <result property="editTime" column="edit_time" jdbcType="TIMESTAMP"/>
-            <result property="createTime" column="create_time" jdbcType="TIMESTAMP"/>
-            <result property="updateTime" column="update_time" jdbcType="TIMESTAMP"/>
-            <result property="isDelete" column="is_delete" jdbcType="TINYINT"/>
+        <id property="userId" column="user_id" jdbcType="BIGINT"/>
+        <result property="userAccount" column="user_account" jdbcType="VARCHAR"/>
+        <result property="userPassword" column="user_password" jdbcType="VARCHAR"/>
+        <result property="userName" column="user_name" jdbcType="VARCHAR"/>
+        <result property="userAvatar" column="user_avatar" jdbcType="VARCHAR"/>
+        <result property="userProfile" column="user_profile" jdbcType="VARCHAR"/>
+        <result property="userStatus" column="user_status" jdbcType="TINYINT"/>
+        <result property="userRole" column="user_role" jdbcType="TINYINT"/>
+        <result property="vipExpireTime" column="vip_expire_time" jdbcType="TIMESTAMP"/>
+        <result property="vipCode" column="vip_code" jdbcType="VARCHAR"/>
+        <result property="vipNumber" column="vip_number" jdbcType="BIGINT"/>
+        <result property="editTime" column="edit_time" jdbcType="TIMESTAMP"/>
+        <result property="createTime" column="create_time" jdbcType="TIMESTAMP"/>
+        <result property="updateTime" column="update_time" jdbcType="TIMESTAMP"/>
+        <result property="isDelete" column="is_delete" jdbcType="TINYINT"/>
     </resultMap>
 
     <sql id="Base_Column_List">
         user_id,user_account,user_password,
         user_name,user_avatar,user_profile,
-        user_status,user_role,edit_time,
+        user_status,user_role,vip_expire_time,
+        ,vip_code,vip_number,edit_time,
         create_time,update_time,is_delete
     </sql>
 </mapper>

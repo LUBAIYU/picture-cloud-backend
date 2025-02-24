@@ -2,18 +2,21 @@ use picture_cloud;
 -- 用户表
 create table if not exists user
 (
-    user_id       bigint auto_increment comment 'id' primary key,
-    user_account  varchar(256)                       not null comment '账号',
-    user_password varchar(512)                       not null comment '密码',
-    user_name     varchar(256)                       null comment '用户昵称',
-    user_avatar   varchar(1024)                      null comment '用户头像',
-    user_profile  varchar(512)                       null comment '用户简介',
-    user_status   tinyint  default 1                 not null comment '用户状态：0-不可用/1-可用',
-    user_role     tinyint  default 1                 not null comment '用户角色：0-管理员/1-用户',
-    edit_time     datetime default CURRENT_TIMESTAMP not null comment '编辑时间',
-    create_time   datetime default CURRENT_TIMESTAMP not null comment '创建时间',
-    update_time   datetime default CURRENT_TIMESTAMP not null on update CURRENT_TIMESTAMP comment '更新时间',
-    is_delete     tinyint  default 0                 not null comment '是否删除',
+    user_id         bigint auto_increment comment 'id' primary key,
+    user_account    varchar(256)                       not null comment '账号',
+    user_password   varchar(512)                       not null comment '密码',
+    user_name       varchar(256)                       null comment '用户昵称',
+    user_avatar     varchar(1024)                      null comment '用户头像',
+    user_profile    varchar(512)                       null comment '用户简介',
+    user_status     tinyint  default 1                 not null comment '用户状态：0-不可用/1-可用',
+    user_role       tinyint  default 1                 not null comment '用户角色：0-管理员/1-用户',
+    vip_expire_time datetime                           null comment '会员过期时间',
+    vip_code        varchar(128)                       null comment '会员兑换码',
+    vip_number      bigint                             null comment '会员编号',
+    edit_time       datetime default CURRENT_TIMESTAMP not null comment '编辑时间',
+    create_time     datetime default CURRENT_TIMESTAMP not null comment '创建时间',
+    update_time     datetime default CURRENT_TIMESTAMP not null on update CURRENT_TIMESTAMP comment '更新时间',
+    is_delete       tinyint  default 0                 not null comment '是否删除',
     UNIQUE KEY uk_user_account (user_account),
     INDEX idx_user_name (user_name)
 ) comment '用户表' collate = utf8mb4_unicode_ci;

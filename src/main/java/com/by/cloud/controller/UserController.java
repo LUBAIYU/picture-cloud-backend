@@ -9,10 +9,7 @@ import com.by.cloud.constants.UserConstant;
 import com.by.cloud.enums.ErrorCode;
 import com.by.cloud.enums.UserRoleEnum;
 import com.by.cloud.exception.BusinessException;
-import com.by.cloud.model.dto.user.UserLoginDto;
-import com.by.cloud.model.dto.user.UserPageDto;
-import com.by.cloud.model.dto.user.UserRegisterDto;
-import com.by.cloud.model.dto.user.UserUpdateDto;
+import com.by.cloud.model.dto.user.*;
 import com.by.cloud.model.entity.User;
 import com.by.cloud.model.vo.user.UserVo;
 import com.by.cloud.service.UserService;
@@ -135,5 +132,15 @@ public class UserController {
         // 清除登录态
         request.getSession().setAttribute(UserConstant.USER_LOGIN_STATE, null);
         return ResultUtils.success(true);
+    }
+
+    @ApiOperation("兑换VIP")
+    @PostMapping("/exchange/vip")
+    public BaseResponse<Boolean> exchangeVip(@RequestBody VipExchangeDto dto, HttpServletRequest request) {
+        ThrowUtils.throwIf(dto == null, ErrorCode.PARAMS_ERROR);
+        String vipCode = dto.getVipCode();
+        User loginUser = userService.getLoginUser(request);
+        boolean isSuccess = userService.exchangeVip(loginUser, vipCode);
+        return ResultUtils.success(isSuccess);
     }
 }
