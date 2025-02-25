@@ -227,9 +227,10 @@ public class CommentsServiceImpl extends ServiceImpl<CommentsMapper, Comments> i
         // 判断图片是否存在
         Picture picture = pictureService.getById(picId);
         ThrowUtils.throwIf(picture == null, ErrorCode.NOT_FOUND_ERROR);
-        // 统计评论数
+        // 统计审核通过的评论数
         return this.lambdaQuery()
                 .eq(Comments::getPicId, picId)
+                .eq(Comments::getStatus, CommentReviewStatusEnum.PASS.getValue())
                 .count()
                 .intValue();
     }

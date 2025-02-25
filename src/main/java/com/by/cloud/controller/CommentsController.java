@@ -55,7 +55,7 @@ public class CommentsController {
         return ResultUtils.success(pageResult);
     }
 
-    @ApiOperation("查询某张图片的评论总数")
+    @ApiOperation("查询某张图片审核通过的评论总数")
     @GetMapping("/count/{id}")
     public BaseResponse<Integer> getCommentCount(@PathVariable("id") Long picId) {
         ThrowUtils.throwIf(picId == null || picId <= 0, ErrorCode.PARAMS_ERROR);
