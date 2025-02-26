@@ -236,7 +236,7 @@ public class CommentsServiceImpl extends ServiceImpl<CommentsMapper, Comments> i
     }
 
     @Override
-    public void thumbComment(Long commentId, HttpServletRequest request) {
+    public void thumbOrCancelThumbComment(Long commentId, Boolean isLiked, HttpServletRequest request) {
         // 1. 校验参数
         Comments comments = this.getById(commentId);
         ThrowUtils.throwIf(comments == null, ErrorCode.NOT_FOUND_ERROR);
@@ -249,13 +249,9 @@ public class CommentsServiceImpl extends ServiceImpl<CommentsMapper, Comments> i
         String likeCountKey = "comment:like:count:" + commentId;
 
         // 4. 使用 Lua 脚本保证原子性（检查 + 计数）
-        String luaScript = """
-                if redis.call('SISMEMBER',KEYS[1],ARGV[1]) == 1 then
-                    return 0
-                end
-                redis.call('SADD',KEYS[1],ARGV[1])
-                return redis.call('INCR',KEYS[2])
-                """;
+        // 根据 isLiked 判断点赞还是取消点赞
+        String luaScript = getLuaScript(isLiked);
+
         // 执行脚本获取返回值（点赞总数）
         Long likeCount = redisTemplate.execute(
                 new DefaultRedisScript<>(luaScript, Long.class),
@@ -263,56 +259,18 @@ public class CommentsServiceImpl extends ServiceImpl<CommentsMapper, Comments> i
                 loginUserId.toString()
         );
 
-        // 5. 已点赞则直接返回
+        // 5. 已点赞或未点赞则直接返回
         if (likeCount == null) {
             throw new BusinessException(ErrorCode.SYSTEM_ERROR, "Redis 操作失败");
         }
-        if (likeCount == 0) {
+        if (isLiked && likeCount == 0) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "已点赞");
-        }
-
-        // 6. 异步持久化
-        executorService.submit(() -> persistLikeAsync(commentId, loginUserId, userLikeKey, likeCountKey, likeCount, false));
-    }
-
-    @Override
-    public void cancelThumbComment(Long commentId, HttpServletRequest request) {
-        // 1. 校验参数
-        Comments comments = this.getById(commentId);
-        ThrowUtils.throwIf(comments == null, ErrorCode.NOT_FOUND_ERROR);
-
-        // 2. 判断用户是否登录
-        Long loginUserId = userService.getLoginUserId(request);
-
-        // 3. 定义 Redis Key
-        String userLikeKey = "comment:like:users:" + commentId;
-        String likeCountKey = "comment:like:count:" + commentId;
-
-        // 4. 使用 Lua 脚本保证原子性（检查 + 计数）
-        String luaScript = """
-                if redis.call('SISMEMBER',KEYS[1],ARGV[1]) == 0 then
-                    return -1
-                end
-                redis.call('SREM',KEYS[1],ARGV[1])
-                return redis.call('DECR',KEYS[2])
-                """;
-        // 执行脚本获取返回值（点赞总数）
-        Long likeCount = redisTemplate.execute(
-                new DefaultRedisScript<>(luaScript, Long.class),
-                Arrays.asList(userLikeKey, likeCountKey),
-                loginUserId.toString()
-        );
-
-        // 5. 未点赞则直接返回
-        if (likeCount == null) {
-            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "Redis 操作失败");
-        }
-        if (likeCount == -1) {
+        } else if (!isLiked && likeCount == -1) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "未点赞，无法取消");
         }
 
         // 6. 异步持久化
-        executorService.submit(() -> persistLikeAsync(commentId, loginUserId, userLikeKey, likeCountKey, likeCount, true));
+        executorService.submit(() -> persistLikeAsync(commentId, loginUserId, userLikeKey, likeCountKey, likeCount, isLiked));
     }
 
     @Override
@@ -398,15 +356,15 @@ public class CommentsServiceImpl extends ServiceImpl<CommentsMapper, Comments> i
      * @param userLikeKey  用户点赞 Key
      * @param likeCountKey 点赞总数 Key
      * @param likeCount    点赞总数
-     * @param isCancel     是否是取消操作
+     * @param isLiked      是否是点赞操作
      */
-    public void persistLikeAsync(Long commentId, Long userId, String userLikeKey, String likeCountKey, Long likeCount, boolean isCancel) {
+    public void persistLikeAsync(Long commentId, Long userId, String userLikeKey, String likeCountKey, Long likeCount, boolean isLiked) {
         try {
             // 设置事务隔离级别为创建新事务
             transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
             // 开启事务
             transactionTemplate.executeWithoutResult(transactionStatus -> {
-                if (!isCancel) {
+                if (isLiked) {
                     // 写入点赞记录
                     CommentLikes commentLikes = new CommentLikes();
                     commentLikes.setCommentId(commentId);
@@ -433,7 +391,7 @@ public class CommentsServiceImpl extends ServiceImpl<CommentsMapper, Comments> i
             log.error("重复点赞：commentId={},userId={}", commentId, userId);
         } catch (Exception e) {
             // 回滚 Redis
-            if (!isCancel) {
+            if (isLiked) {
                 redisTemplate.opsForSet().remove(userLikeKey, userId);
                 redisTemplate.opsForValue().decrement(likeCountKey);
             } else {
@@ -466,6 +424,34 @@ public class CommentsServiceImpl extends ServiceImpl<CommentsMapper, Comments> i
             boolean removed = proxyService.removeBatchByIds(childrenIdList);
             ThrowUtils.throwIf(!removed, ErrorCode.OPERATION_ERROR, "删除子级评论失败");
         }
+    }
+
+    /**
+     * 根据是否点赞获取对应的Lua脚本
+     *
+     * @param isLiked 是否点赞
+     * @return Lua脚本
+     */
+    private String getLuaScript(Boolean isLiked) {
+        String luaScript;
+        if (isLiked) {
+            luaScript = """
+                    if redis.call('SISMEMBER',KEYS[1],ARGV[1]) == 1 then
+                        return 0
+                    end
+                    redis.call('SADD',KEYS[1],ARGV[1])
+                    return redis.call('INCR',KEYS[2])
+                    """;
+        } else {
+            luaScript = """
+                    if redis.call('SISMEMBER',KEYS[1],ARGV[1]) == 0 then
+                        return -1
+                    end
+                    redis.call('SREM',KEYS[1],ARGV[1])
+                    return redis.call('DECR',KEYS[2])
+                    """;
+        }
+        return luaScript;
     }
 }
 

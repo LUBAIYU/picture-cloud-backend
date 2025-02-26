@@ -51,20 +51,14 @@ public interface CommentsService extends IService<Comments> {
     int getCommentCountByPicId(Long picId);
 
     /**
-     * 评论点赞
+     * 评论点赞/取消点赞
      *
      * @param commentId 评论ID
+     * @param isLiked   是否点赞
      * @param request   请求对象
      */
-    void thumbComment(Long commentId, HttpServletRequest request);
+    void thumbOrCancelThumbComment(Long commentId, Boolean isLiked, HttpServletRequest request);
 
-    /**
-     * 取消评论点赞
-     *
-     * @param commentId 评论ID
-     * @param request   请求对象
-     */
-    void cancelThumbComment(Long commentId, HttpServletRequest request);
 
     /**
      * 批量查询图片的评论数

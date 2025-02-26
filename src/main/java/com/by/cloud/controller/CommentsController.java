@@ -71,19 +71,12 @@ public class CommentsController {
         return ResultUtils.success(resultMap);
     }
 
-    @ApiOperation("评论点赞")
+    @ApiOperation("评论点赞/取消点赞")
     @PostMapping("/thumb")
-    public BaseResponse<Boolean> thumbComment(Long commentId, HttpServletRequest request) {
+    public BaseResponse<Boolean> thumbOrCancelThumbComment(Long commentId, Boolean isLiked, HttpServletRequest request) {
         ThrowUtils.throwIf(commentId == null || commentId <= 0, ErrorCode.PARAMS_ERROR);
-        commentsService.thumbComment(commentId, request);
-        return ResultUtils.success(true);
-    }
-
-    @ApiOperation("取消评论点赞")
-    @PostMapping("/thumb/cancel")
-    public BaseResponse<Boolean> cancelThumbComment(Long commentId, HttpServletRequest request) {
-        ThrowUtils.throwIf(commentId == null || commentId <= 0, ErrorCode.PARAMS_ERROR);
-        commentsService.cancelThumbComment(commentId, request);
+        ThrowUtils.throwIf(isLiked == null, ErrorCode.PARAMS_ERROR);
+        commentsService.thumbOrCancelThumbComment(commentId, isLiked, request);
         return ResultUtils.success(true);
     }
 
