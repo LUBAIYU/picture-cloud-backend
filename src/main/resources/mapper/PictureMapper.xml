@@ -11,7 +11,6 @@
         <result property="thumbnailUrl" column="thumbnail_url" jdbcType="VARCHAR"/>
         <result property="picName" column="pic_name" jdbcType="VARCHAR"/>
         <result property="introduction" column="introduction" jdbcType="VARCHAR"/>
-        <result property="tags" column="tags" jdbcType="VARCHAR"/>
         <result property="picSize" column="pic_size" jdbcType="BIGINT"/>
         <result property="picWidth" column="pic_width" jdbcType="INTEGER"/>
         <result property="picHeight" column="pic_height" jdbcType="INTEGER"/>
@@ -21,6 +20,7 @@
         <result property="categoryId" column="category_id" jdbcType="BIGINT"/>
         <result property="userId" column="user_id" jdbcType="BIGINT"/>
         <result property="spaceId" column="space_id" jdbcType="BIGINT"/>
+        <result property="likeCount" column="like_count" jdbcType="BIGINT"/>
         <result property="reviewStatus" column="review_status" jdbcType="INTEGER"/>
         <result property="reviewMessage" column="review_message" jdbcType="VARCHAR"/>
         <result property="reviewerId" column="reviewer_id" jdbcType="BIGINT"/>

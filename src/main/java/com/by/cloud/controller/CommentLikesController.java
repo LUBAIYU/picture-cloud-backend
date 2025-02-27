@@ -8,6 +8,7 @@ import com.by.cloud.model.entity.CommentLikes;
 import com.by.cloud.service.CommentLikesService;
 import com.by.cloud.utils.ResultUtils;
 import com.by.cloud.utils.ThrowUtils;
+import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -20,6 +21,7 @@ import javax.annotation.Resource;
  */
 @RestController
 @RequestMapping("/comment/likes")
+@Api(tags = "评论点赞模块")
 public class CommentLikesController {
 
     @Resource

@@ -38,6 +38,7 @@ create table if not exists picture
     category_id    bigint                             null comment '分类 id',
     user_id        bigint                             not null comment '创建用户 id',
     space_id       bigint                             null comment '空间 id (为空表示公共空间)',
+    like_count     bigint   default 0                 not null comment '点赞数',
     review_status  int      default 0                 not null comment '审核状态：0-待审核；1-通过；2-拒绝',
     review_message varchar(512)                       null comment '审核信息',
     reviewer_id    bigint                             null comment '审核人ID',
@@ -164,3 +165,16 @@ create table if not exists comment_reviews
     review_msg    varchar(255)                       null comment '审核信息',
     review_time   datetime default CURRENT_TIMESTAMP not null comment '审核时间'
 ) comment '评论审核表' collate = utf8mb4_unicode_ci;
+
+-- 图片点赞记录表
+create table if not exists `picture_likes`
+(
+    id          bigint auto_increment comment '主键ID' primary key,
+    picture_id  bigint                             not null comment '图片ID',
+    user_id     bigint                             not null comment '用户ID',
+    create_time datetime default CURRENT_TIMESTAMP not null comment '创建时间',
+    -- 索引设计
+    INDEX idx_picture_id (picture_id),
+    INDEX idx_user_id (user_id),
+    UNIQUE KEY uk_pictureId_userId (picture_id, user_id)
+) comment '图片点赞记录表' collate = utf8mb4_unicode_ci;

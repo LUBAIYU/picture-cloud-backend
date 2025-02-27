@@ -4,6 +4,7 @@ import cn.hutool.core.collection.CollUtil;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.by.cloud.common.BaseResponse;
 import com.by.cloud.enums.ErrorCode;
+import com.by.cloud.model.dto.comment.CommentLikesDto;
 import com.by.cloud.model.dto.comment.CommentPageDto;
 import com.by.cloud.model.dto.comment.CommentPublishDto;
 import com.by.cloud.model.dto.comment.CommentReviewDto;
@@ -73,10 +74,9 @@ public class CommentsController {
 
     @ApiOperation("评论点赞/取消点赞")
     @PostMapping("/thumb")
-    public BaseResponse<Boolean> thumbOrCancelThumbComment(Long commentId, Boolean isLiked, HttpServletRequest request) {
-        ThrowUtils.throwIf(commentId == null || commentId <= 0, ErrorCode.PARAMS_ERROR);
-        ThrowUtils.throwIf(isLiked == null, ErrorCode.PARAMS_ERROR);
-        commentsService.thumbOrCancelThumbComment(commentId, isLiked, request);
+    public BaseResponse<Boolean> thumbOrCancelThumbComment(@RequestBody CommentLikesDto commentLikesDto, HttpServletRequest request) {
+        ThrowUtils.throwIf(commentLikesDto == null, ErrorCode.PARAMS_ERROR);
+        commentsService.thumbOrCancelThumbComment(commentLikesDto, request);
         return ResultUtils.success(true);
     }
 

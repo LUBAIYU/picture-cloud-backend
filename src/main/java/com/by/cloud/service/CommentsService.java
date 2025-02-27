@@ -2,6 +2,7 @@ package com.by.cloud.service;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.by.cloud.model.dto.comment.CommentLikesDto;
 import com.by.cloud.model.dto.comment.CommentPageDto;
 import com.by.cloud.model.dto.comment.CommentPublishDto;
 import com.by.cloud.model.dto.comment.CommentReviewDto;
@@ -53,11 +54,10 @@ public interface CommentsService extends IService<Comments> {
     /**
      * 评论点赞/取消点赞
      *
-     * @param commentId 评论ID
-     * @param isLiked   是否点赞
-     * @param request   请求对象
+     * @param commentLikesDto 请求参数
+     * @param request         请求对象
      */
-    void thumbOrCancelThumbComment(Long commentId, Boolean isLiked, HttpServletRequest request);
+    void thumbOrCancelThumbComment(CommentLikesDto commentLikesDto, HttpServletRequest request);
 
 
     /**
@@ -75,4 +75,12 @@ public interface CommentsService extends IService<Comments> {
      * @param request          请求对象
      */
     void commentReview(CommentReviewDto commentReviewDto, HttpServletRequest request);
+
+    /**
+     * 获取点赞 Lua 脚本
+     *
+     * @param isLiked 是否点赞
+     * @return Lua 脚本
+     */
+    String getLuaScript(Boolean isLiked);
 }

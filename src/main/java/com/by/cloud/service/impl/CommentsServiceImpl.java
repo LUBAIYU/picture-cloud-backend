@@ -14,6 +14,7 @@ import com.by.cloud.enums.ErrorCode;
 import com.by.cloud.enums.ReviewResultStatusEnum;
 import com.by.cloud.exception.BusinessException;
 import com.by.cloud.mapper.CommentsMapper;
+import com.by.cloud.model.dto.comment.CommentLikesDto;
 import com.by.cloud.model.dto.comment.CommentPageDto;
 import com.by.cloud.model.dto.comment.CommentPublishDto;
 import com.by.cloud.model.dto.comment.CommentReviewDto;
@@ -236,8 +237,16 @@ public class CommentsServiceImpl extends ServiceImpl<CommentsMapper, Comments> i
     }
 
     @Override
-    public void thumbOrCancelThumbComment(Long commentId, Boolean isLiked, HttpServletRequest request) {
+    public void thumbOrCancelThumbComment(CommentLikesDto commentLikesDto, HttpServletRequest request) {
         // 1. 校验参数
+        Long commentId = commentLikesDto.getCommentId();
+        Boolean isLiked = commentLikesDto.getIsLiked();
+        if (commentId == null || commentId <= 0) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        if (isLiked == null) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
         Comments comments = this.getById(commentId);
         ThrowUtils.throwIf(comments == null, ErrorCode.NOT_FOUND_ERROR);
 
@@ -432,7 +441,8 @@ public class CommentsServiceImpl extends ServiceImpl<CommentsMapper, Comments> i
      * @param isLiked 是否点赞
      * @return Lua脚本
      */
-    private String getLuaScript(Boolean isLiked) {
+    @Override
+    public String getLuaScript(Boolean isLiked) {
         String luaScript;
         if (isLiked) {
             luaScript = """
