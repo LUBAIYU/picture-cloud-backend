@@ -37,6 +37,17 @@ public class BaiduAiApi {
     public static final OkHttpClient HTTP_CLIENT = new OkHttpClient();
 
     /**
+     * 文本审核接口请求地址
+     */
+    public static final String TEXT_AUDIT_REQUEST_URL = "https://aip.baidubce.com/rest/2.0/solution/v1/text_censor/v2/user_defined?access_token=";
+
+    /**
+     * 获取 AccessToken 接口请求地址
+     */
+    public static final String GET_TOKEN_REQUEST_URL = "https://aip.baidubce.com/oauth/2.0/token?client_id=%s&client_secret=%s&grant_type=client_credentials";
+
+
+    /**
      * AI审核文本
      *
      * @param text 文本
@@ -55,7 +66,7 @@ public class BaiduAiApi {
 
         // 创建请求并发送
         Request request = new Request.Builder()
-                .url("https://aip.baidubce.com/rest/2.0/solution/v1/text_censor/v2/user_defined?access_token=" + getAccessToken())
+                .url(TEXT_AUDIT_REQUEST_URL + getAccessToken())
                 .post(formBody)
                 .addHeader("Content-Type", "application/x-www-form-urlencoded")
                 .addHeader("Accept", "application/json")
@@ -86,7 +97,7 @@ public class BaiduAiApi {
         MediaType mediaType = MediaType.parse("application/json");
         RequestBody requestBody = RequestBody.Companion.create("", mediaType);
         // 请求地址
-        String requestUrl = "https://aip.baidubce.com/oauth/2.0/token?client_id=" + apiKey + "&client_secret=" + secretKey + "&grant_type=client_credentials";
+        String requestUrl = String.format(GET_TOKEN_REQUEST_URL, apiKey, secretKey);
         // 发送请求
         Request request = new Request.Builder()
                 .url(requestUrl)

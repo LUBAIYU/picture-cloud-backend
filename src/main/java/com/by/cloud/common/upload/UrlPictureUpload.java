@@ -55,7 +55,7 @@ public class UrlPictureUpload extends BasePictureUploadTemplate {
                 try {
                     long contentLength = Long.parseLong(contentLengthStr);
                     ThrowUtils.throwIf(contentLength > PictureConstant.MAX_FILE_SIZE,
-                            ErrorCode.PARAMS_ERROR, "文件大小不能超过 2MB");
+                            ErrorCode.PARAMS_ERROR, "文件大小不能超过 10MB");
                 } catch (NumberFormatException e) {
                     throw new BusinessException(ErrorCode.PARAMS_ERROR, "文件大小格式异常");
                 }
@@ -77,7 +77,7 @@ public class UrlPictureUpload extends BasePictureUploadTemplate {
     }
 
     @Override
-    protected void transferFile(Object inputSource, File file) throws Exception {
+    protected void  transferFile(Object inputSource, File file) throws Exception {
         String fileUrl = (String) inputSource;
         HttpUtil.downloadFile(fileUrl, file);
     }

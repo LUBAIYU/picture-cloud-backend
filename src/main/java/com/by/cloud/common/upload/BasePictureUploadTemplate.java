@@ -12,15 +12,14 @@ import com.by.cloud.exception.BusinessException;
 import com.by.cloud.model.dto.file.UploadPictureResult;
 import com.by.cloud.utils.ColorTransferUtils;
 import com.qcloud.cos.model.PutObjectResult;
-import com.qcloud.cos.model.ciModel.persistence.CIObject;
-import com.qcloud.cos.model.ciModel.persistence.ImageInfo;
-import com.qcloud.cos.model.ciModel.persistence.ProcessResults;
+import com.qcloud.cos.model.ciModel.persistence.*;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.annotation.Resource;
 import java.io.File;
 import java.util.Date;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * 图片上传模板
@@ -64,7 +63,11 @@ public abstract class BasePictureUploadTemplate {
             transferFile(inputSource, tempFile);
             PutObjectResult putObjectResult = cosManager.putPictureObject(uploadPath, tempFile);
             // 获取图片信息
-            ImageInfo imageInfo = putObjectResult.getCiUploadResult().getOriginalInfo().getImageInfo();
+            ImageInfo imageInfo = Optional.ofNullable(putObjectResult)
+                    .map(PutObjectResult::getCiUploadResult)
+                    .map(CIUploadResult::getOriginalInfo)
+                    .map(OriginalInfo::getImageInfo)
+                    .orElseThrow(() -> new BusinessException(ErrorCode.SYSTEM_ERROR, "无法获取图片信息"));
             // 获取图片处理结果
             ProcessResults processResults = putObjectResult.getCiUploadResult().getProcessResults();
             List<CIObject> objectList = processResults.getObjectList();
